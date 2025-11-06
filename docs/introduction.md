@@ -2,6 +2,22 @@
 
 
 
+\*necessidade do sistema\*
+
+
+
+\*por que é um sistema crítico\*
+
+
+
+\*problemas\*
+
+
+
+Objetivos gerias
+
+
+
 A Internet das Coisas (IoT) emergiu como uma das tecnologias mais disruptivas da atualidade, transformando a forma como dispositivos físicos interagem com o mundo digital. Por meio de sensores, atuadores e sistemas embarcados conectados à internet, a IoT possibilita a coleta e o processamento de dados em tempo real, permitindo decisões automáticas e inteligentes em diversos setores, como saúde, transporte, indústria, agricultura, cidades inteligentes e residências conectadas (Borgia, 2014; Madakam et al., 2015; Reyna et al., 2018).
 
 
