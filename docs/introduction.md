@@ -2,105 +2,71 @@
 
 
 
-\*necessidade do sistema\*
+A distribuição de vacinas representa uma das etapas mais sensíveis e críticas dentro das cadeias de suprimentos do setor da saúde. Por se tratarem de produtos biológicos altamente sensíveis a variações de temperatura, pequenas falhas no armazenamento ou transporte podem comprometer sua eficácia, segurança e validade, afetando diretamente a saúde pública e a confiança populacional nos programas de imunização (WHO, 2022). Estima-se que até 25% das vacinas em países em desenvolvimento sejam degradadas devido a falhas na cadeia de frio, principalmente durante o transporte e manuseio inadequado (UNICEF, 2021).
 
 
 
-\*por que é um sistema crítico\*
+A gestão do transporte de vacinas é, portanto, um sistema crítico, pois envolve a integridade de um insumo estratégico de saúde pública, cuja falha pode gerar impactos epidemiológicos, econômicos e sociais significativos. Além da preservação da temperatura adequada (geralmente entre +2 °C e +8 °C), a rastreabilidade, a auditoria e a conformidade regulatória tornaram-se exigências legais em diversos países. No Brasil, a Agência Nacional de Vigilância Sanitária (Anvisa), por meio da Resolução RDC nº 430/2020, determina que fabricantes, distribuidores e transportadores de medicamentos e imunobiológicos devem garantir o monitoramento contínuo de temperatura, registros auditáveis e rastreabilidade completa durante o transporte e armazenamento, de forma a possibilitar ações corretivas e investigações em caso de desvios de qualidade (ANVISA, 2020).
 
 
 
-\*problemas\*
+A ausência de sistemas confiáveis de monitoramento e registro acarreta problemas sérios de auditoria e conformidade. Em situações de recall ou suspeita de defeitos em determinados lotes, é fundamental identificar rapidamente quando, onde e sob quais condições as vacinas foram expostas a possíveis falhas. Sem um sistema de gestão digital e automatizado, esse processo é lento, sujeito a erros humanos e frequentemente inviabiliza a rastreabilidade completa exigida por normas internacionais, como o Good Distribution Practice (GDP) da União Europeia e o WHO Model Guidance for Vaccine Management (WHO, 2023).
 
 
 
-Objetivos gerias
+Nesse contexto, a aplicação de tecnologias digitais e conectadas surge como uma resposta estratégica aos desafios de rastreabilidade e confiabilidade do transporte de vacinas. Soluções baseadas em Internet das Coisas (IoT) possibilitam o monitoramento em tempo real de parâmetros ambientais, geográficos e logísticos, permitindo maior visibilidade e controle da cadeia de frio. No entanto, a adoção dessas tecnologias também traz novas responsabilidades, especialmente no que se refere à segurança e integridade das informações coletadas e transmitidas por dispositivos conectados.
 
 
 
-A Internet das Coisas (IoT) emergiu como uma das tecnologias mais disruptivas da atualidade, transformando a forma como dispositivos físicos interagem com o mundo digital. Por meio de sensores, atuadores e sistemas embarcados conectados à internet, a IoT possibilita a coleta e o processamento de dados em tempo real, permitindo decisões automáticas e inteligentes em diversos setores, como saúde, transporte, indústria, agricultura, cidades inteligentes e residências conectadas (Borgia, 2014; Madakam et al., 2015; Reyna et al., 2018).
+A Internet das Coisas (IoT) tem se consolidado como um dos pilares centrais da transformação digital global, integrando sensores, atuadores e sistemas inteligentes a praticamente todos os setores produtivos. Segundo a International Data Corporation (IDC, 2024), estima-se que o número de dispositivos IoT conectados ultrapasse 30 bilhões até 2030, impulsionando uma nova era de automação e análise de dados em tempo real. No entanto, essa rápida expansão traz consigo novos desafios de cibersegurança e privacidade, especialmente em setores críticos, como o de saúde, onde a confiabilidade e a integridade das informações são vitais.
 
 
 
-Nos últimos anos, o crescimento da IoT tem sido exponencial, impulsionado pelo avanço de microcontroladores de baixo custo, como ESP32 e Raspberry Pi, e pelo desenvolvimento de protocolos de comunicação eficientes e leves, como MQTT, CoAP e LoRaWAN (Li et al., 2020; Perera et al., 2020). Segundo projeções recentes, estima-se que até 2030 existam mais de 30 bilhões de dispositivos conectados globalmente, tornando a IoT um elemento central na digitalização de setores estratégicos da economia (Statista, 2023). Essa expansão reflete não apenas a demanda por automação e monitoramento em tempo real, mas também a necessidade de integração entre sistemas físicos e digitais, criando novas oportunidades e desafios tecnológicos.
+O aumento exponencial de dispositivos conectados ampliou significativamente a superfície de ataque das infraestruturas digitais. Relatórios recentes da ENISA (European Union Agency for Cybersecurity, 2023) indicam que ataques direcionados a dispositivos IoT cresceram mais de 400% entre 2020 e 2023, com destaque para tentativas de sequestro de dados (ransomware), interceptação de comunicações (MITM) e exploração de falhas em protocolos inseguros. Esses ataques demonstram que, apesar do potencial transformador da IoT, sua adoção sem mecanismos adequados de proteção pode comprometer a disponibilidade e a confiabilidade de serviços essenciais.
 
 
 
-Com o aumento da conectividade, surge também uma preocupação crescente com a cibersegurança. Dispositivos IoT são frequentemente implementados com recursos limitados, o que os torna vulneráveis a ataques que podem comprometer a confidencialidade, integridade e disponibilidade das informações. Ataques maliciosos podem ocorrer de diversas formas, incluindo exploração de falhas de software, interceptação de dados em trânsito, invasão de redes e ataques de negação de serviço (Diro e Chilamkurti, 2018; Sicari et al., 2019). A literatura aponta que a falta de protocolos de segurança robustos em dispositivos IoT pode levar a prejuízos significativos, tanto financeiros quanto de reputação, além de riscos diretos à segurança e à saúde de indivíduos e organizações (Shen et al., 2021).
+Na área da saúde, o risco é ainda maior. Sistemas hospitalares e logísticos baseados em IoT frequentemente lidam com dados sensíveis e operações críticas, desde o monitoramento de pacientes até o transporte de insumos biológicos. Um incidente de segurança pode resultar não apenas em perdas financeiras, mas também em danos à saúde pública e à confiança institucional. Por isso, organismos internacionais, como o NIST (National Institute of Standards and Technology, 2023) e a Organização Mundial da Saúde (WHO, 2023), têm reforçado diretrizes para o desenvolvimento de soluções IoT seguras, destacando a importância da autenticação mútua, criptografia ponta a ponta, monitoramento contínuo e planos de continuidade operacional.
 
 
 
-No setor da saúde, a IoT assume um papel ainda mais crítico. Sistemas de monitoramento remoto, telemedicina, rastreamento de equipamentos hospitalares e controle de transporte de medicamentos sensíveis são exemplos de aplicações que dependem da confiabilidade e da segurança dos dispositivos conectados. Nesse contexto, o transporte de vacinas é particularmente sensível, pois envolve a preservação da integridade biológica de medicamentos essenciais para a saúde pública. Vacinas exigem condições ambientais rigorosas, como temperatura e umidade controladas, para manter sua eficácia. Qualquer falha na logística de transporte, seja decorrente de fatores humanos, falhas de infraestrutura ou ataques cibernéticos, pode comprometer a imunização de populações inteiras e gerar impactos significativos na saúde pública (PATH, 2018; World Health Organization, 2020).
+Nesse contexto, torna-se evidente que a evolução da IoT deve caminhar junto com o fortalecimento da ciber-resiliência — a capacidade de resistir, responder e se recuperar de incidentes digitais. Essa integração entre conectividade e segurança é o que permite que soluções IoT sejam confiáveis em ambientes de missão crítica, como cadeias de suprimento de vacinas, sistemas hospitalares e dispositivos médicos conectados.
 
 
 
-Além das condições físicas, a rastreabilidade dos lotes de vacinas se tornou um aspecto estratégico e regulatório. Sistemas modernos de distribuição de vacinas requerem mecanismos que permitam identificar cada lote, monitorar sua localização em tempo real e garantir a segurança das informações relacionadas, prevenindo fraudes e desvios de estoque (Global Health Supply Chain, 2021). Esse cenário evidencia a necessidade de soluções tecnológicas que integrem conectividade, monitoramento em tempo real e segurança da informação, garantindo a eficácia da logística de imunização em larga escala.
+Assim, a necessidade de um sistema inteligente e seguro de gestão de transporte de vacinas emerge não apenas pela eficiência operacional, mas pela obrigação de garantir rastreabilidade, confiabilidade e conformidade regulatória. A integração de tecnologias IoT ao processo permite monitorar em tempo real variáveis ambientais, localização e status de entrega das câmaras térmicas, viabilizando respostas imediatas a anomalias. Contudo, o valor real do sistema está em sua capacidade de assegurar integridade, autenticidade e disponibilidade das informações, pilares que definem a criticidade desse tipo de solução em ambientes de missão crítica como o setor da saúde.
 
 
 
-A previsão para o futuro da IoT na saúde e no transporte de produtos sensíveis indica um crescimento contínuo, com dispositivos cada vez mais inteligentes, integrados a sistemas de análise de dados e inteligência artificial, permitindo predição de falhas, otimização de rotas e maior automação de processos (Zanella et al., 2020; Sethi e Sarangi, 2017). Paralelamente, o aumento da conectividade torna imperativo o desenvolvimento de políticas e soluções de cibersegurança robustas, capazes de proteger informações sensíveis e assegurar a confiança de usuários, instituições e governos (Roman et al., 2018).
+Referências
 
 
 
-Dessa forma, a IoT apresenta-se como uma ferramenta poderosa para garantir a integridade, rastreabilidade e segurança no transporte de vacinas, combinando avanços tecnológicos com práticas de proteção de dados cada vez mais exigentes no contexto da saúde pública moderna.
+ANVISA. Resolução da Diretoria Colegiada – RDC nº 430, de 8 de outubro de 2020. Dispõe sobre as Boas Práticas de Distribuição, Armazenagem e de Transporte de Medicamentos. Brasília: Agência Nacional de Vigilância Sanitária, 2020. Disponível em: https://www.in.gov.br/en/web/dou/-/resolucao-rdc-n-430-de-8-de-outubro-de-2020-282786640
 
+. Acesso em: 5 nov. 2025.
 
 
-Referências sugeridas (2015–2025)
 
+ENISA – European Union Agency for Cybersecurity. Good Practices for Security of IoT – Secure Supply Chain for IoT. Heraklion: ENISA, 2023. Disponível em: https://www.enisa.europa.eu/publications
 
+. Acesso em: 5 nov. 2025.
 
-Borgia, E. (2014). The Internet of Things vision: Key features, applications and open issues. Computer Communications, 54, 1–31.
 
 
+IDC – International Data Corporation. Worldwide Global DataSphere IoT Devices and Data Forecast, 2024–2028. Framingham: IDC, 2024. Disponível em: https://www.idc.com
 
-Madakam, S., Ramaswamy, R., \& Tripathi, S. (2015). Internet of Things (IoT): A literature review. Journal of Computer and Communications, 3(5), 164–173.
+. Acesso em: 5 nov. 2025.
 
 
 
-Reyna, A., Martín, C., Chen, J., Soler, E., \& Díaz, M. (2018). On blockchain and its integration with IoT. Challenges and opportunities. Future Generation Computer Systems, 88, 173–190.
+NIST – National Institute of Standards and Technology. Considerations for Managing Internet of Things (IoT) Cybersecurity and Privacy Risks (NISTIR 8228). Gaithersburg: U.S. Department of Commerce, 2019. Disponível em: https://doi.org/10.6028/NIST.IR.8228
 
+. Acesso em: 5 nov. 2025.
 
 
-Li, S., Xu, L. D., \& Zhao, S. (2020). The internet of things: a survey. Information Systems Frontiers, 17, 243–259.
 
+WHO – World Health Organization. Temperature sensitivity of vaccines. Geneva: WHO, 2019. Disponível em: https://www.who.int
 
-
-Perera, C., Liu, C. H., Jayawardena, S., \& Chen, M. (2020). A survey on internet of things from industrial market perspective. IEEE Access, 2, 1660–1679.
-
-
-
-Diro, A. A., \& Chilamkurti, N. (2018). Distributed attack detection scheme using deep learning approach for Internet of Things. Future Generation Computer Systems, 82, 761–768.
-
-
-
-Sicari, S., Rizzardi, A., Grieco, L. A., \& Coen-Porisini, A. (2019). Security, privacy and trust in Internet of Things: The road ahead. Computer Networks, 76, 146–164.
-
-
-
-Shen, J., Zhang, J., \& Li, H. (2021). Cybersecurity challenges in IoT-based healthcare systems. Journal of Healthcare Engineering, 2021.
-
-
-
-World Health Organization. (2020). Temperature-sensitive health products: guidelines for storage and transport.
-
-
-
-PATH. (2018). Vaccine Supply Chain and Logistics.
-
-
-
-Global Health Supply Chain. (2021). Digital solutions for vaccine traceability.
-
-
-
-Zanella, A., Bui, N., Castellani, A., Vangelista, L., \& Zorzi, M. (2020). Internet of Things for smart cities. IEEE Internet of Things Journal, 1(1), 22–32.
-
-
-
-Sethi, P., \& Sarangi, S. R. (2017). Internet of Things: Architectures, protocols, and applications. Journal of Electrical and Computer Engineering, 2017.
-
-
-
-Roman, R., Lopez, J., \& Mambo, M. (2018). Mobile edge computing, Fog et IoT security: Threats, challenges, and solutions. Future Generation Computer Systems, 78, 680–698.
+. Acesso em: 5 nov. 2025.
 
