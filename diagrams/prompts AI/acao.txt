@@ -1,0 +1,13 @@
+Crie a imagem abaixo, não use texto NENHUM, NEM MESMO LEGENDAS, apenas imagens, e use um tema minimalista moderno, mas não seja simples no desenho, faça um desenho caprichado e morderno, e dê espaço entre as imagens, eu vou adicionar legendas depois
+
+
+
+Descrição da imagem — Pilar de Ação (Camada de Resposta e Controle):
+
+
+
+há um painel de controle do operador, representando a interface web ou aplicativo que permite monitorar e enviar comandos manuais (como resetar o sistema, ajustar limites ou confirmar o recebimento da carga).
+
+
+
+Um pequeno escudo de segurança aparece na comunicação de retorno, simbolizando o uso de autenticação mútua e criptografia TLS também nessa etapa, garantindo que apenas comandos legítimos cheguem aos dispositivos.

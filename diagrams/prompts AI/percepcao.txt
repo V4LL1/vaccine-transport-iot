@@ -1,0 +1,15 @@
+Crie a imagem abaixo, não use texto NENHUM, NEM MESMO LEGENDAS, apenas imagens, e use um tema minimalista moderno, mas não seja simples no desenho, faça um desenho caprichado e morderno, e dê espaço entre as imagens, eu vou adicionar legendas depois
+
+Descrição da imagem — Pilar da Percepção (Camada de Sensoriamento):
+
+A imagem mostra o ESP32 no centro, conectado a dois sensores principais:
+
+DHT22, responsável por medir temperatura e umidade;
+
+Módulo GPS, usado para obter a localização das câmaras térmicas durante o transporte.
+
+O ESP32 coleta os dados dos sensores, faz um pré-processamento simples e envia as informações para a próxima camada.
+
+O sistema é alimentado por uma fonte de 5V com bateria de backup, garantindo funcionamento contínuo mesmo sem energia externa.
+
+Setas ilustram o fluxo dos dados — dos sensores para o ESP32, e do ESP32 para a camada de conectividade — representando o papel dessa camada como ponto inicial da coleta e digitalização das informações físicas do ambiente.

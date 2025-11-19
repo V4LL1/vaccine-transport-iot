@@ -1,0 +1,10 @@
+Crie a imagem abaixo, não use texto NENHUM, NEM MESMO LEGENDAS, apenas imagens, e use um tema minimalista moderno, mas não seja simples no desenho, faça um desenho caprichado e morderno, e dê espaço entre as imagens, eu vou adicionar legendas depois
+
+Descrição da imagem — Pilar de Conectividade (Camada de Comunicação):
+A imagem mostra o ESP32 enviando dados coletados (temperatura, umidade e localização) para um Broker MQTT por meio de uma conexão Wi-Fi ou rede celular (modem 4G).
+
+O Broker MQTT é o ponto central da comunicação, responsável por receber, autenticar e encaminhar as mensagens para o servidor de aplicação. Esse servidor armazena as informações em um banco de dados seguro, garantindo a integridade e disponibilidade dos registros.
+
+Entre o ESP32 e o broker, há uma indicação de canal seguro MQTT/TLS, simbolizando o uso de criptografia e autenticação mútua. O diagrama também mostra a presença de uma camada de segurança adicional, responsável pelo controle de acesso e verificação de integridade das mensagens.
+
+Setas indicam o fluxo de dados: do ESP32 → para o Broker MQTT → e então para o Servidor e Banco de Dados, representando o caminho percorrido pelas informações coletadas.

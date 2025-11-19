@@ -1,0 +1,12 @@
+Crie a imagem abaixo, não use texto NENHUM, NEM MESMO LEGENDAS, apenas imagens, e use um tema minimalista moderno, mas não seja simples no desenho, faça um desenho caprichado e morderno, e dê espaço entre as imagens, eu vou adicionar legendas depois
+
+Descrição da imagem — Pilar de Análise (Camada de Processamento e Interpretação):
+A imagem mostra o Servidor de Aplicação recebendo dados do Broker MQTT e processando essas informações para extrair métricas e gerar alertas.
+
+O servidor é conectado a um Banco de Dados onde ficam armazenados os registros de temperatura, umidade, localização e status das câmaras térmicas. Acima dele, há uma camada de processamento de dados, representando scripts e rotinas responsáveis por verificar valores fora dos limites permitidos, calcular médias e identificar tendências.
+
+Um módulo de segurança aparece ao lado do servidor, indicando o uso de assinaturas digitais (HMAC-SHA256) e validação de integridade das mensagens recebidas.
+
+Também é ilustrado um sistema de backup automático e failover, representando os mecanismos de continuidade e recuperação (BCP/DRP) que asseguram a operação do sistema mesmo em caso de falhas ou ataques.
+
+As setas no diagrama indicam o fluxo dos dados do Broker MQTT → para o Servidor de Aplicação → e depois para o Banco de Dados e Mecanismos de Backup, simbolizando a análise e o armazenamento seguro das informações coletadas.

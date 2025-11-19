@@ -1,5 +1,4 @@
-1. Arquitetar e desenvolver um sistema IoT seguro, capaz de medir temperatura, umidade, localização e confirmação de recebimento das câmaras de transporte de vacinas, enviando periodicamente essas informações a um servidor via protocolo MQTT.
-   
+1. Arquitetar e desenvolver um sistema IoT seguro para a gestão de transporte de vacinas, utilizando um protótipo baseado em ESP32, capaz de realizar a medição de temperatura, umidade, localização e confirmação de recebimento das câmaras térmicas durante o deslocamento, enviando periodicamente essas informações a um servidor via protocolo MQTT
 2. Aplicar um conjunto integrado de medidas de segurança para proteger a comunicação, autenticação e integridade dos dados no sistema IoT, incluindo:
 
 
@@ -57,4 +56,10 @@
 
 
 5\. Construir um dashboard seguro para visualização em tempo real de métricas operacionais, como temperatura, umidade, localização, alarmes e indicadores de continuidade (uptime, tempo de recuperação e perda de dados tolerada).
+
+
+
+
+
+(Percepção, Conectividade,  Análise e Ação (Tomada de decisão))
 
