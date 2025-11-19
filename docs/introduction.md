@@ -1,6 +1,4 @@
-**Introdução**
-
-
+INTRODUÇÃO
 
 A distribuição de vacinas representa uma das etapas mais sensíveis e críticas dentro das cadeias de suprimentos do setor da saúde. Por se tratarem de produtos biológicos altamente sensíveis a variações de temperatura, pequenas falhas no armazenamento ou transporte podem comprometer sua eficácia, segurança e validade, afetando diretamente a saúde pública e a confiança populacional nos programas de imunização (WHO, 2022). Estima-se que até 25% das vacinas em países em desenvolvimento sejam degradadas devido a falhas na cadeia de frio, principalmente durante o transporte e manuseio inadequado (UNICEF, 2021).
 
@@ -38,35 +36,45 @@ Assim, a necessidade de um sistema inteligente e seguro de gestão de transporte
 
 
 
-Referências
+\[1] WORLD HEALTH ORGANIZATION. Vaccine management and cold chain guidelines. Geneva: WHO, 2022. Disponível em: https://www.who.int
+
+. Acesso em: 17 nov. 2025.
 
 
 
-ANVISA. Resolução da Diretoria Colegiada – RDC nº 430, de 8 de outubro de 2020. Dispõe sobre as Boas Práticas de Distribuição, Armazenagem e de Transporte de Medicamentos. Brasília: Agência Nacional de Vigilância Sanitária, 2020. Disponível em: https://www.in.gov.br/en/web/dou/-/resolucao-rdc-n-430-de-8-de-outubro-de-2020-282786640
+\[2] UNITED NATIONS CHILDREN’S FUND. Strengthening the cold chain for vaccine distribution. New York: UNICEF, 2021. Disponível em: https://www.unicef.org
 
-. Acesso em: 5 nov. 2025.
-
-
-
-ENISA – European Union Agency for Cybersecurity. Good Practices for Security of IoT – Secure Supply Chain for IoT. Heraklion: ENISA, 2023. Disponível em: https://www.enisa.europa.eu/publications
-
-. Acesso em: 5 nov. 2025.
+. Acesso em: 17 nov. 2025.
 
 
 
-IDC – International Data Corporation. Worldwide Global DataSphere IoT Devices and Data Forecast, 2024–2028. Framingham: IDC, 2024. Disponível em: https://www.idc.com
+\[3] AGÊNCIA NACIONAL DE VIGILÂNCIA SANITÁRIA. Resolução RDC n.º 430, de 8 de outubro de 2020. Dispõe sobre as Boas Práticas de Distribuição, Armazenagem e de Transporte de Medicamentos. Brasília, DF: ANVISA, 2020. Disponível em: https://www.gov.br/anvisa
 
-. Acesso em: 5 nov. 2025.
-
-
-
-NIST – National Institute of Standards and Technology. Considerations for Managing Internet of Things (IoT) Cybersecurity and Privacy Risks (NISTIR 8228). Gaithersburg: U.S. Department of Commerce, 2019. Disponível em: https://doi.org/10.6028/NIST.IR.8228
-
-. Acesso em: 5 nov. 2025.
+. Acesso em: 17 nov. 2025.
 
 
 
-WHO – World Health Organization. Temperature sensitivity of vaccines. Geneva: WHO, 2019. Disponível em: https://www.who.int
+\[4] WORLD HEALTH ORGANIZATION. WHO model guidance for vaccine management. Geneva: WHO, 2023. Disponível em: https://www.who.int
 
-. Acesso em: 5 nov. 2025.
+. Acesso em: 17 nov. 2025.
+
+
+
+\[5] INTERNATIONAL DATA CORPORATION. Worldwide Internet of Things Forecast 2024–2030. Framingham: IDC, 2024. Disponível em: https://www.idc.com
+
+. Acesso em: 17 nov. 2025.
+
+
+
+\[6] EUROPEAN UNION AGENCY FOR CYBERSECURITY. Threat landscape for the Internet of Things. Athens: ENISA, 2023. Disponível em: https://www.enisa.europa.eu
+
+. Acesso em: 17 nov. 2025.
+
+
+
+\[7] NATIONAL INSTITUTE OF STANDARDS AND TECHNOLOGY. Security guidelines for Internet of Things (IoT) devices. Gaithersburg, MD: NIST, 2023. Disponível em: https://www.nist.gov
+
+. Acesso em: 17 nov. 2025.
+
+
 
