@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Dashboard - Transporte Seguro de Vacinas</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+    <style>
+        body { font-family: Arial; margin: 15px; }
+        #map { height: 320px; margin-top: 15px; }
+        .box { border:1px solid #ccc; padding:10px; border-radius:6px; margin-bottom:15px; }
+        .row { display:flex; gap:10px; flex-wrap:wrap; }
+        .col { flex:1; min-width:300px; }
+    </style>
+</head>
+<body>
+<h2>Dashboard – Transporte Seguro de Vacinas</h2>
+
+<div class="box">
+    <h3>Viagens</h3>
+    <select id="tripSelect"></select>
+</div>
+
+<div class="row">
+    <div class="col box">
+        <h3>Últimas Leituras</h3>
+        <ul id="recent"></ul>
+    </div>
+    <div class="col box">
+        <h3>Mapa da Rota</h3>
+        <div id="map"></div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col box">
+        <h3>Temperatura</h3>
+        <canvas id="chartTemp"></canvas>
+    </div>
+    <div class="col box">
+        <h3>Umidade</h3>
+        <canvas id="chartHum"></canvas>
+    </div>
+</div>
+
+<script>
+async function fetchJSON(url){ return await (await fetch(url)).json(); }
+
+let map = L.map('map').setView([-23.21, -45.88], 13);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+let polyline = null;
+let markers = [];
+
+async function loadTrips(){
+    const trips = await fetchJSON("/api/trips");
+    const sel = document.getElementById("tripSelect");
+    sel.innerHTML = "";
+
+    trips.forEach(t => {
+        const opt = document.createElement("option");
+        opt.value = t.trip_id;
+        opt.innerText = `${t.trip_id} - ${t.batch_code} (${t.origin} → ${t.destination})`;
+        sel.appendChild(opt);
+    });
+
+    if (trips.length) {
+        sel.value = trips[0].trip_id;
+        loadTrip(trips[0].trip_id);
+    }
+
+    sel.onchange = () => loadTrip(sel.value);
+}
+
+async function loadTrip(id){
+    const readings = await fetchJSON("/api/readings/" + id);
+    const recent = await fetchJSON("/api/readings/recent");
+
+    // Recent readings
+    const ul = document.getElementById("recent");
+    ul.innerHTML = "";
+    recent.forEach(r => {
+        const li = document.createElement("li");
+        li.innerText = `${r.timestamp} — ${r.temperature}°C / ${r.humidity}%`;
+        ul.appendChild(li);
+    });
+
+    // Map
+    if (polyline) map.removeLayer(polyline);
+    markers.forEach(m => map.removeLayer(m));
+    markers = [];
+
+    const coords = readings.map(r => [r.latitude, r.longitude]).filter(c => c[0]);
+
+    if (coords.length){
+        polyline = L.polyline(coords, {color: 'blue'}).addTo(map);
+        map.fitBounds(polyline.getBounds());
+
+        coords.forEach(c => markers.push(L.circleMarker(c,{radius:4}).addTo(map)));
+    }
+
+    // Charts
+    const labels = readings.map(r => r.timestamp);
+    const temps = readings.map(r => r.temperature);
+    const hums = readings.map(r => r.humidity);
+
+    if (!window.tempChart){
+        window.tempChart = new Chart(document.getElementById("chartTemp"), {
+            type: 'line',
+            data: { labels, datasets: [{ label: 'Temperatura (°C)', data: temps }] }
+        });
+    } else {
+        tempChart.data.labels = labels;
+        tempChart.data.datasets[0].data = temps;
+        tempChart.update();
+    }
+
+    if (!window.humChart){
+        window.humChart = new Chart(document.getElementById("chartHum"), {
+            type: 'line',
+            data: { labels, datasets: [{ label: 'Umidade (%)', data: hums }] }
+        });
+    } else {
+        humChart.data.labels = labels;
+        humChart.data.datasets[0].data = hums;
+        humChart.update();
+    }
+}
+
+loadTrips();
+</script>
+</body>
+</html>
