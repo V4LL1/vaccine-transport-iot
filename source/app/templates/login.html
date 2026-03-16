@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login — VaccineTransport IoT</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: #0b1120;
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+/* Left panel */
+.left-panel {
+  background: linear-gradient(145deg, #0f172a 0%, #0e1e38 60%, #0a1628 100%);
+  border-right: 1px solid #1f2d44;
+  display: flex; flex-direction: column;
+  justify-content: space-between;
+  padding: 48px;
+  position: relative; overflow: hidden;
+}
+.left-panel::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 30% 40%, rgba(14,165,233,.07) 0%, transparent 60%),
+              radial-gradient(ellipse at 70% 80%, rgba(99,102,241,.05) 0%, transparent 50%);
+}
+.panel-logo {
+  display: flex; align-items: center; gap: 12px; position: relative;
+}
+.panel-logo .icon {
+  width: 44px; height: 44px;
+  background: linear-gradient(135deg, #0ea5e9, #6366f1);
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+}
+.panel-logo h1 { font-size: 1.1rem; font-weight: 700; color: #f1f5f9; }
+.panel-logo p  { font-size: .72rem; color: #475569; margin-top: 2px; }
+
+.panel-content { position: relative; }
+.panel-content h2 {
+  font-size: 2rem; font-weight: 800;
+  color: #f1f5f9; line-height: 1.25; margin-bottom: 16px;
+}
+.panel-content h2 span { color: #38bdf8; }
+.panel-content p { color: #64748b; font-size: .9rem; line-height: 1.7; max-width: 380px; }
+.features { margin-top: 28px; display: flex; flex-direction: column; gap: 12px; }
+.feature {
+  display: flex; align-items: center; gap: 12px;
+}
+.feature-icon {
+  width: 32px; height: 32px;
+  background: rgba(14,165,233,.1); border: 1px solid rgba(14,165,233,.2);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; flex-shrink: 0;
+}
+.feature-text { font-size: .82rem; color: #94a3b8; }
+.feature-text strong { color: #cbd5e1; }
+
+.panel-footer { position: relative; font-size: .72rem; color: #334155; }
+
+/* Right panel */
+.right-panel {
+  display: flex; align-items: center; justify-content: center;
+  padding: 40px 32px;
+  background: #0b1120;
+}
+.card {
+  width: 100%; max-width: 380px;
+}
+.card-title {
+  font-size: 1.4rem; font-weight: 700; color: #f1f5f9; margin-bottom: 4px;
+}
+.card-sub { font-size: .85rem; color: #64748b; margin-bottom: 28px; }
+
+label { display: block; font-size: .78rem; color: #94a3b8; margin-bottom: 5px; font-weight: 500; }
+.input-wrap { position: relative; margin-bottom: 16px; }
+.input-icon {
+  position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+  color: #475569; font-size: 14px; pointer-events: none;
+}
+input[type=email], input[type=password] {
+  width: 100%;
+  background: #111827;
+  border: 1px solid #1f2d44;
+  border-radius: 9px;
+  padding: .65rem .9rem .65rem 2.4rem;
+  color: #f1f5f9;
+  font-size: .9rem;
+  outline: none;
+  transition: border-color .2s, box-shadow .2s;
+}
+input:focus { border-color: #0ea5e9; box-shadow: 0 0 0 3px rgba(14,165,233,.12); }
+.btn {
+  width: 100%;
+  background: linear-gradient(135deg, #0ea5e9, #0284c7);
+  color: #fff; border: none; border-radius: 9px;
+  padding: .78rem; font-size: .9rem; font-weight: 600;
+  cursor: pointer; transition: opacity .2s, transform .1s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  margin-top: 4px;
+}
+.btn:hover { opacity: .9; transform: translateY(-1px); }
+.btn:active { transform: translateY(0); }
+
+.error {
+  background: rgba(239,68,68,.08);
+  border: 1px solid rgba(239,68,68,.25);
+  border-left: 3px solid #ef4444;
+  color: #fca5a5; border-radius: 8px;
+  padding: .65rem .9rem; font-size: .82rem; margin-bottom: 16px;
+  display: flex; align-items: center; gap: 8px;
+}
+.mfa-note {
+  margin-top: 20px; padding: 12px 14px;
+  background: rgba(14,165,233,.06); border: 1px solid rgba(14,165,233,.15);
+  border-radius: 8px; font-size: .76rem; color: #64748b; line-height: 1.6;
+}
+.mfa-note strong { color: #38bdf8; }
+.divider { border: none; border-top: 1px solid #1f2d44; margin: 20px 0; }
+</style>
+</head>
+<body>
+
+<!-- Left decorative panel -->
+<div class="left-panel">
+  <div class="panel-logo">
+    <div class="icon">💉</div>
+    <div>
+      <h1>VaccineTransport IoT</h1>
+      <p>Sistema de Monitoramento Seguro</p>
+    </div>
+  </div>
+
+  <div class="panel-content">
+    <h2>Monitoramento<br><span>inteligente</span> de<br>vacinas em trânsito.</h2>
+    <p>Plataforma IoT com múltiplas camadas de segurança para garantir a integridade da cadeia fria de imunobiológicos.</p>
+    <div class="features">
+      <div class="feature">
+        <div class="feature-icon">🔐</div>
+        <div class="feature-text"><strong>Autenticação MFA</strong> — senha + código TOTP</div>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">🛡️</div>
+        <div class="feature-text"><strong>TLS 1.2</strong> — comunicação MQTT cifrada</div>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">📡</div>
+        <div class="feature-text"><strong>Tempo real</strong> — ESP32 + DHT22 + GPS NEO-6M</div>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">📋</div>
+        <div class="feature-text"><strong>Audit log</strong> — rastreabilidade completa</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel-footer">TCC — Engenharia da Computação &nbsp;·&nbsp; Sistema IoT Seguro</div>
+</div>
+
+<!-- Right login panel -->
+<div class="right-panel">
+  <div class="card">
+    <div class="card-title">Bem-vindo de volta</div>
+    <div class="card-sub">Insira suas credenciais para acessar o sistema.</div>
+
+    {% if error %}
+    <div class="error">⚠️ {{ error }}</div>
+    {% endif %}
+
+    <form method="POST" action="/login">
+      <label for="email">Email</label>
+      <div class="input-wrap">
+        <span class="input-icon">✉</span>
+        <input type="email" id="email" name="email" placeholder="seu@email.com"
+               autocomplete="username" required autofocus>
+      </div>
+
+      <label for="password">Senha</label>
+      <div class="input-wrap">
+        <span class="input-icon">🔑</span>
+        <input type="password" id="password" name="password" placeholder="••••••••"
+               autocomplete="current-password" required>
+      </div>
+
+      <button type="submit" class="btn">
+        Entrar <span>→</span>
+      </button>
+    </form>
+
+    <div class="mfa-note">
+      🔒 <strong>Autenticação em dois fatores ativada.</strong>
+      Após a senha, você será solicitado a inserir o código do seu autenticador (Google Authenticator / Authy).
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

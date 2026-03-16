@@ -1,0 +1,12 @@
+# ============================================================
+# Mosquitto ACL — Controle de acesso por tópico
+# ============================================================
+
+# ESP32 device — pode publicar em vaccines/# e ler nada
+user esp32-device
+topic write vaccines/readings
+topic write vaccines/heartbeat
+
+# Flask subscriber — pode ler tudo (apenas leitura)
+user flask-subscriber
+topic read vaccines/#

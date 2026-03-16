@@ -1,0 +1,45 @@
+1773584873: mosquitto version 2.0.22 starting
+1773584873: Config loaded from c:/Users/guilh/Desktop/vaccine-transport-iot/source/broker/mosquitto-tls.conf.
+1773584873: Opening ipv6 listen socket on port 8883.
+1773584873: Opening ipv4 listen socket on port 8883.
+1773584873: mosquitto version 2.0.22 running
+1773585005: New connection from 127.0.0.1:62677 on port 8883.
+1773585005: OpenSSL Error[0]: error:0A000418:SSL routines::tlsv1 alert unknown ca
+1773585005: Client <unknown> disconnected: protocol error.
+1773585184: mosquitto version 2.0.22 starting
+1773585184: Config loaded from c:/Users/guilh/Desktop/vaccine-transport-iot/source/broker/mosquitto-tls.conf.
+1773585184: Opening ipv6 listen socket on port 8883.
+1773585184: Opening ipv4 listen socket on port 8883.
+1773585184: mosquitto version 2.0.22 running
+1773585187: New connection from 127.0.0.1:52710 on port 8883.
+1773585187: New client connected from 127.0.0.1:52710 as flask-subscriber (p2, c1, k60, u'flask-subscriber').
+1773585187: No will message specified.
+1773585187: Sending CONNACK to flask-subscriber (0, 0)
+1773585187: Received SUBSCRIBE from flask-subscriber
+1773585187: 	vaccines/readings (QoS 0)
+1773585187: flask-subscriber 0 vaccines/readings
+1773585187: Sending SUBACK to flask-subscriber
+1773585187: Received SUBSCRIBE from flask-subscriber
+1773585187: 	vaccines/heartbeat (QoS 0)
+1773585187: flask-subscriber 0 vaccines/heartbeat
+1773585187: Sending SUBACK to flask-subscriber
+1773585248: Received PINGREQ from flask-subscriber
+1773585248: Sending PINGRESP to flask-subscriber
+1773585308: Received PINGREQ from flask-subscriber
+1773585308: Sending PINGRESP to flask-subscriber
+1773585368: Received PINGREQ from flask-subscriber
+1773585368: Sending PINGRESP to flask-subscriber
+1773585429: Received PINGREQ from flask-subscriber
+1773585429: Sending PINGRESP to flask-subscriber
+1773585489: Received PINGREQ from flask-subscriber
+1773585489: Sending PINGRESP to flask-subscriber
+1773585550: Received PINGREQ from flask-subscriber
+1773585550: Sending PINGRESP to flask-subscriber
+1773585610: Received PINGREQ from flask-subscriber
+1773585610: Sending PINGRESP to flask-subscriber
+1773585671: Received PINGREQ from flask-subscriber
+1773585671: Sending PINGRESP to flask-subscriber
+1773585731: Received PINGREQ from flask-subscriber
+1773585731: Sending PINGRESP to flask-subscriber
+1773585792: Received PINGREQ from flask-subscriber
+1773585792: Sending PINGRESP to flask-subscriber

@@ -1,137 +1,687 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
-    <meta charset="utf-8">
-    <title>Dashboard - Transporte Seguro de Vacinas</title>
-    <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="utf-8">
+<title>VaccineTransport — Dashboard</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<style>
+/* ── Reset & Base ─────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:        #0b1120;
+  --surface:   #111827;
+  --surface2:  #1a2234;
+  --border:    #1f2d44;
+  --text:      #e2e8f0;
+  --muted:     #64748b;
+  --accent:    #0ea5e9;
+  --accent2:   #6366f1;
+  --danger:    #ef4444;
+  --warn:      #f59e0b;
+  --success:   #22c55e;
+  --sidebar-w: 220px;
+}
+body {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  font-size: 14px;
+}
 
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+/* ── Sidebar ──────────────────────────────────────────────── */
+.sidebar {
+  width: var(--sidebar-w);
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  z-index: 100;
+}
+.sidebar-logo {
+  padding: 20px 18px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
+}
+.sidebar-logo .icon {
+  width: 36px; height: 36px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+.sidebar-logo h1 { font-size: .85rem; font-weight: 700; color: var(--text); line-height: 1.3; }
+.sidebar-logo span { font-size: .7rem; color: var(--muted); }
 
-    <style>
-        body { font-family: Arial; margin: 15px; }
-        #map { height: 320px; margin-top: 15px; }
-        .box { border:1px solid #ccc; padding:10px; border-radius:6px; margin-bottom:15px; }
-        .row { display:flex; gap:10px; flex-wrap:wrap; }
-        .col { flex:1; min-width:300px; }
-    </style>
+.sidebar-nav { padding: 12px 8px; flex: 1; }
+.nav-label { font-size: .65rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); padding: 8px 10px 4px; }
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 10px; border-radius: 7px;
+  color: var(--muted); font-size: .82rem; font-weight: 500;
+  cursor: pointer; transition: all .15s; text-decoration: none;
+  margin-bottom: 2px;
+}
+.nav-item:hover { background: var(--surface2); color: var(--text); }
+.nav-item.active { background: rgba(14,165,233,.12); color: var(--accent); }
+.nav-item .ni { font-size: 15px; width: 18px; text-align: center; }
+
+.sidebar-footer {
+  padding: 12px 8px;
+  border-top: 1px solid var(--border);
+}
+.user-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px; border-radius: 7px;
+}
+.user-avatar {
+  width: 30px; height: 30px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: .8rem; font-weight: 700; color: #fff; flex-shrink: 0;
+}
+.user-info { flex: 1; min-width: 0; }
+.user-name { font-size: .8rem; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.user-role { font-size: .68rem; color: var(--muted); }
+.logout-btn {
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  width: 100%; padding: 7px 10px; border-radius: 7px;
+  background: transparent; border: 1px solid var(--border);
+  color: var(--muted); font-size: .78rem; cursor: pointer;
+  text-decoration: none; transition: all .15s; margin-top: 6px;
+}
+.logout-btn:hover { border-color: var(--danger); color: var(--danger); }
+
+/* ── Main content ─────────────────────────────────────────── */
+.main {
+  margin-left: var(--sidebar-w);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* ── Topbar ───────────────────────────────────────────────── */
+.topbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 24px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 50;
+}
+.topbar-title { font-size: 1rem; font-weight: 600; color: var(--text); }
+.topbar-title span { color: var(--muted); font-weight: 400; font-size: .85rem; margin-left: 6px; }
+.topbar-right { display: flex; align-items: center; gap: 12px; }
+.status-pill {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 20px; padding: 4px 12px;
+  font-size: .75rem; color: var(--muted);
+}
+.dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--muted); flex-shrink: 0;
+}
+.dot.green  { background: var(--success); box-shadow: 0 0 6px var(--success); }
+.dot.red    { background: var(--danger);  box-shadow: 0 0 6px var(--danger); }
+.dot.pulse  { animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{ opacity:1 } 50%{ opacity:.4 } }
+.last-msg { font-size: .72rem; color: var(--muted); }
+
+/* ── Content area ─────────────────────────────────────────── */
+.content { padding: 20px 24px; flex: 1; }
+
+/* ── Alarm banner ─────────────────────────────────────────── */
+#alarmPanel {
+  background: rgba(239,68,68,.08);
+  border: 1px solid rgba(239,68,68,.3);
+  border-left: 4px solid var(--danger);
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin-bottom: 20px;
+  display: none;
+}
+#alarmPanel h3 { color: var(--danger); font-size: .9rem; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+#alarmList { list-style: none; }
+#alarmList li {
+  font-size: .82rem; color: #fca5a5;
+  padding: 3px 0; border-bottom: 1px solid rgba(239,68,68,.1);
+}
+#alarmList li:last-child { border: none; }
+
+/* ── Stat cards ───────────────────────────────────────────── */
+.stats-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 20px; }
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 18px;
+  display: flex; align-items: center; gap: 14px;
+}
+.stat-icon {
+  width: 42px; height: 42px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; flex-shrink: 0;
+}
+.si-blue  { background: rgba(14,165,233,.12); }
+.si-green { background: rgba(34,197,94,.12); }
+.si-warn  { background: rgba(245,158,11,.12); }
+.si-red   { background: rgba(239,68,68,.12); }
+.stat-info { min-width: 0; }
+.stat-val { font-size: 1.5rem; font-weight: 700; color: var(--text); line-height: 1; }
+.stat-label { font-size: .72rem; color: var(--muted); margin-top: 4px; }
+
+/* ── Grid ─────────────────────────────────────────────────── */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.grid-2-3 { display: grid; grid-template-columns: 2fr 3fr; gap: 16px; margin-bottom: 16px; }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.card-header {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.card-header h3 { font-size: .87rem; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 7px; }
+.card-header h3 .ci { font-size: 14px; }
+.card-body { padding: 16px 18px; }
+
+/* ── Trip selector ────────────────────────────────────────── */
+.select-wrap { position: relative; }
+select {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 9px 12px;
+  color: var(--text);
+  font-size: .82rem;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  transition: border-color .2s;
+}
+select:focus { border-color: var(--accent); }
+.select-arrow {
+  position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+  color: var(--muted); pointer-events: none; font-size: 10px;
+}
+.trip-meta {
+  display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px;
+}
+.trip-badge {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 6px; padding: 4px 10px;
+  font-size: .74rem; color: var(--muted);
+}
+.trip-badge span { color: var(--text); font-weight: 600; }
+
+/* ── Device list ──────────────────────────────────────────── */
+#deviceList { display: flex; flex-direction: column; gap: 8px; }
+.device-card {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 9px 14px;
+}
+.device-name { font-size: .82rem; font-weight: 600; color: var(--text); }
+.device-time { font-size: .7rem; color: var(--muted); margin-top: 2px; }
+.badge {
+  padding: 3px 10px; border-radius: 12px;
+  font-size: .7rem; font-weight: 700; letter-spacing: .03em;
+}
+.badge-green  { background: rgba(34,197,94,.15);  color: #4ade80; border: 1px solid rgba(34,197,94,.2); }
+.badge-yellow { background: rgba(245,158,11,.15); color: #fbbf24; border: 1px solid rgba(245,158,11,.2); }
+.badge-red    { background: rgba(239,68,68,.15);  color: #f87171; border: 1px solid rgba(239,68,68,.2); }
+.badge-gray   { background: rgba(100,116,139,.15);color: #94a3b8; border: 1px solid rgba(100,116,139,.2); }
+
+/* ── Recent readings table ────────────────────────────────── */
+.readings-table { width: 100%; border-collapse: collapse; }
+.readings-table th {
+  text-align: left; font-size: .7rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .06em;
+  color: var(--muted); padding: 0 10px 10px; border-bottom: 1px solid var(--border);
+}
+.readings-table td {
+  padding: 9px 10px; font-size: .8rem; color: var(--text);
+  border-bottom: 1px solid var(--border);
+}
+.readings-table tr:last-child td { border-bottom: none; }
+.readings-table tr.alarm-row td { color: #fca5a5; }
+.readings-table tr:hover td { background: var(--surface2); }
+.temp-val { font-weight: 700; }
+.temp-alarm { color: var(--danger) !important; }
+.warn-icon { font-size: 11px; margin-left: 4px; }
+
+/* ── Map ──────────────────────────────────────────────────── */
+#map { height: 300px; border-radius: 0; }
+.map-placeholder {
+  height: 300px; display: flex; align-items: center; justify-content: center;
+  color: var(--muted); font-size: .85rem; background: var(--surface2);
+}
+
+/* ── Charts ───────────────────────────────────────────────── */
+.chart-wrap { padding: 8px 0; }
+
+/* ── Scrollbar ────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+</style>
 </head>
 <body>
-<h2>Dashboard – Transporte Seguro de Vacinas</h2>
 
-<div class="box">
-    <h3>Viagens</h3>
-    <select id="tripSelect"></select>
-</div>
-
-<div class="row">
-    <div class="col box">
-        <h3>Últimas Leituras</h3>
-        <ul id="recent"></ul>
+<!-- ── SIDEBAR ─────────────────────────────────────────────── -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="icon">💉</div>
+    <div>
+      <h1>VaccineTransport</h1>
+      <span>Sistema IoT Seguro</span>
     </div>
-    <div class="col box">
-        <h3>Mapa da Rota</h3>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-label">Monitoramento</div>
+    <a class="nav-item active" href="#">
+      <span class="ni">📊</span> Dashboard
+    </a>
+    <a class="nav-item" href="#" onclick="scrollTo(0,0)">
+      <span class="ni">🗺️</span> Mapa de Rota
+    </a>
+
+    <div class="nav-label" style="margin-top:8px">Sistema</div>
+    <a class="nav-item" href="/api/audit" target="_blank">
+      <span class="ni">📋</span> Audit Log
+    </a>
+    <a class="nav-item" href="/api/status" target="_blank">
+      <span class="ni">⚙️</span> Status API
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="user-row">
+      <div class="user-avatar" id="userAvatar">A</div>
+      <div class="user-info">
+        <div class="user-name" id="userName">Usuário</div>
+        <div class="user-role" id="userRole">—</div>
+      </div>
+    </div>
+    <a href="/logout" class="logout-btn">
+      <span>⎋</span> Sair
+    </a>
+  </div>
+</aside>
+
+<!-- ── MAIN ────────────────────────────────────────────────── -->
+<div class="main">
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <div>
+      <span class="topbar-title">Dashboard <span>/ Monitoramento em Tempo Real</span></span>
+    </div>
+    <div class="topbar-right">
+      <div class="status-pill">
+        <div class="dot" id="brokerDot"></div>
+        <span id="brokerLabel">Broker MQTT</span>
+        <span id="brokerBadge" class="badge badge-gray" style="margin-left:4px">—</span>
+      </div>
+      <span class="last-msg" id="lastMsg">—</span>
+    </div>
+  </header>
+
+  <!-- Content -->
+  <div class="content">
+
+    <!-- Alarm banner -->
+    <div id="alarmPanel">
+      <h3><span>🚨</span> Violações de Temperatura Detectadas</h3>
+      <ul id="alarmList"></ul>
+    </div>
+
+    <!-- Stat cards -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-icon si-blue">🌡️</div>
+        <div class="stat-info">
+          <div class="stat-val" id="statTemp">—</div>
+          <div class="stat-label">Última Temperatura</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon si-green">💧</div>
+        <div class="stat-info">
+          <div class="stat-val" id="statHum">—</div>
+          <div class="stat-label">Última Umidade</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon si-green">📡</div>
+        <div class="stat-info">
+          <div class="stat-val" id="statDevices">—</div>
+          <div class="stat-label">Dispositivos Online</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon si-red">⚠️</div>
+        <div class="stat-info">
+          <div class="stat-val" id="statAlarms">—</div>
+          <div class="stat-label">Alarmes Ativos</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Trip + Devices -->
+    <div class="grid-2" style="margin-bottom:16px">
+      <div class="card">
+        <div class="card-header">
+          <h3><span class="ci">🚚</span> Viagem Selecionada</h3>
+        </div>
+        <div class="card-body">
+          <div class="select-wrap">
+            <select id="tripSelect"></select>
+            <span class="select-arrow">▼</span>
+          </div>
+          <div class="trip-meta" id="tripMeta"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3><span class="ci">📡</span> Status dos Dispositivos</h3>
+        </div>
+        <div class="card-body">
+          <div id="deviceList"><span style="color:var(--muted);font-size:.82rem">Carregando...</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Map + Recent readings -->
+    <div class="grid-2-3" style="margin-bottom:16px">
+      <div class="card">
+        <div class="card-header">
+          <h3><span class="ci">🗺️</span> Mapa da Rota</h3>
+        </div>
         <div id="map"></div>
-    </div>
-</div>
+      </div>
 
-<div class="row">
-    <div class="col box">
-        <h3>Temperatura</h3>
-        <canvas id="chartTemp"></canvas>
+      <div class="card">
+        <div class="card-header">
+          <h3><span class="ci">📋</span> Últimas Leituras</h3>
+        </div>
+        <div class="card-body" style="padding: 0 18px 16px; overflow-x:auto">
+          <table class="readings-table" id="recent">
+            <thead>
+              <tr>
+                <th>Horário</th>
+                <th>Temp.</th>
+                <th>Umidade</th>
+                <th>GPS</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="recentBody"></tbody>
+          </table>
+        </div>
+      </div>
     </div>
-    <div class="col box">
-        <h3>Umidade</h3>
-        <canvas id="chartHum"></canvas>
+
+    <!-- Charts -->
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header">
+          <h3><span class="ci">📈</span> Temperatura (°C)</h3>
+          <span id="tempRange" style="font-size:.72rem;color:var(--muted)"></span>
+        </div>
+        <div class="card-body chart-wrap">
+          <canvas id="chartTemp" height="120"></canvas>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <h3><span class="ci">💧</span> Umidade (%)</h3>
+        </div>
+        <div class="card-body chart-wrap">
+          <canvas id="chartHum" height="120"></canvas>
+        </div>
+      </div>
     </div>
-</div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
 
 <script>
-async function fetchJSON(url){ return await (await fetch(url)).json(); }
+// ---- Helpers ----
+async function fetchJSON(url) {
+    const res = await fetch(url);
+    return res.json();
+}
 
-let map = L.map('map').setView([-23.21, -45.88], 13);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+function timeAgo(isoStr) {
+    if (!isoStr) return "—";
+    const diff = Math.round((Date.now() - new Date(isoStr + "Z")) / 1000);
+    if (diff < 5)   return "agora";
+    if (diff < 60)  return diff + "s atrás";
+    if (diff < 3600) return Math.floor(diff/60) + "min atrás";
+    return Math.floor(diff/3600) + "h atrás";
+}
 
-let polyline = null;
-let markers = [];
+// ---- Chart defaults (dark theme) ----
+Chart.defaults.color = '#64748b';
+Chart.defaults.borderColor = '#1f2d44';
 
-async function loadTrips(){
+function makeChart(id, label, color) {
+    return new Chart(document.getElementById(id), {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{ label, data: [], borderColor: color,
+                         backgroundColor: color + '18',
+                         borderWidth: 2, tension: 0.4, pointRadius: 2,
+                         fill: true }]
+        },
+        options: {
+            animation: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { grid: { color: '#1f2d44' }, ticks: { maxTicksLimit: 8, font: { size: 11 } } },
+                y: { grid: { color: '#1f2d44' }, ticks: { font: { size: 11 } } }
+            }
+        }
+    });
+}
+let tempChart = makeChart("chartTemp", "Temperatura (°C)", "#f87171");
+let humChart  = makeChart("chartHum",  "Umidade (%)",      "#38bdf8");
+
+// ---- Mapa ----
+let map       = L.map('map').setView([-23.21, -45.88], 13);
+let polyline  = null;
+let markers   = [];
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap'
+}).addTo(map);
+
+// ---- Status do broker ----
+async function refreshStatus() {
+    try {
+        const s = await fetchJSON("/api/status");
+        const dot   = document.getElementById("brokerDot");
+        const badge = document.getElementById("brokerBadge");
+        const label = document.getElementById("brokerLabel");
+        if (s.broker_connected) {
+            dot.className = "dot green pulse";
+            badge.textContent = "Online";
+            badge.className = "badge badge-green";
+        } else {
+            dot.className = "dot red";
+            badge.textContent = "Offline";
+            badge.className = "badge badge-red";
+        }
+        document.getElementById("lastMsg").textContent = "Última msg: " + timeAgo(s.last_mqtt_message);
+    } catch(e) {}
+}
+
+// ---- Alarmes ----
+async function refreshAlarms() {
+    try {
+        const alarms = await fetchJSON("/api/alarms");
+        const panel  = document.getElementById("alarmPanel");
+        const list   = document.getElementById("alarmList");
+        document.getElementById("statAlarms").textContent = alarms.length;
+
+        if (alarms.length === 0) { panel.style.display = "none"; return; }
+
+        panel.style.display = "block";
+        list.innerHTML = "";
+        alarms.slice(0, 8).forEach(a => {
+            const li = document.createElement("li");
+            const dir = a.temperature < a.min_temp ? "abaixo do mínimo" : "acima do máximo";
+            li.innerHTML = `<strong>${a.timestamp}</strong> — ${a.vaccine_name} (${a.batch_code}): `
+                         + `<strong>${a.temperature}°C</strong> [limite: ${a.min_temp}–${a.max_temp}°C] — ${dir}`;
+            list.appendChild(li);
+        });
+    } catch(e) {}
+}
+
+// ---- Dispositivos ----
+async function refreshDevices() {
+    try {
+        const devs = await fetchJSON("/api/devices");
+        const el   = document.getElementById("deviceList");
+        const online = devs.filter(d => d.connectivity === 'online').length;
+        document.getElementById("statDevices").textContent = online + "/" + devs.length;
+
+        el.innerHTML = "";
+        devs.forEach(d => {
+            const clsMap = { online:"badge-green", recent:"badge-yellow", offline:"badge-red", never:"badge-gray" };
+            const labelMap = { online:"Online", recent:"Recente", offline:"Offline", never:"Nunca visto" };
+            const div = document.createElement("div");
+            div.className = "device-card";
+            div.innerHTML = `
+                <div>
+                  <div class="device-name">${d.serial_number}</div>
+                  <div class="device-time">Último sinal: ${d.last_seen ? d.last_seen : '—'}</div>
+                </div>
+                <span class="badge ${clsMap[d.connectivity] || 'badge-gray'}">${labelMap[d.connectivity] || d.connectivity}</span>`;
+            el.appendChild(div);
+        });
+    } catch(e) {}
+}
+
+// ---- Leituras recentes ----
+async function refreshRecent() {
+    try {
+        const recent = await fetchJSON("/api/readings/recent");
+        if (recent.length > 0) {
+            document.getElementById("statTemp").textContent = recent[0].temperature.toFixed(1) + "°C";
+            document.getElementById("statHum").textContent  = recent[0].humidity.toFixed(1) + "%";
+        }
+        const tbody = document.getElementById("recentBody");
+        tbody.innerHTML = "";
+        recent.forEach(r => {
+            const violation = r.temperature < r.min_temp || r.temperature > r.max_temp;
+            const hasGPS = r.latitude && r.longitude;
+            const tr = document.createElement("tr");
+            if (violation) tr.className = "alarm-row";
+            tr.innerHTML = `
+                <td>${r.timestamp.slice(11,19)}</td>
+                <td class="temp-val ${violation ? 'temp-alarm' : ''}">${r.temperature.toFixed(1)}°C${violation ? '<span class="warn-icon">⚠</span>' : ''}</td>
+                <td>${r.humidity.toFixed(1)}%</td>
+                <td style="color:var(--muted)">${hasGPS ? '📍 Fix' : '—'}</td>
+                <td><span class="badge ${violation ? 'badge-red' : 'badge-green'}">${violation ? 'Alerta' : 'Normal'}</span></td>`;
+            tbody.appendChild(tr);
+        });
+    } catch(e) {}
+}
+
+// ---- Viagens ----
+let currentTripId = null;
+
+async function loadTrips() {
     const trips = await fetchJSON("/api/trips");
     const sel = document.getElementById("tripSelect");
     sel.innerHTML = "";
-
     trips.forEach(t => {
         const opt = document.createElement("option");
         opt.value = t.trip_id;
-        opt.innerText = `${t.trip_id} - ${t.batch_code} (${t.origin} → ${t.destination})`;
+        opt.textContent = `#${t.trip_id} — ${t.batch_code} | ${t.origin} → ${t.destination}`;
         sel.appendChild(opt);
     });
-
     if (trips.length) {
         sel.value = trips[0].trip_id;
-        loadTrip(trips[0].trip_id);
+        loadTrip(trips[0]);
     }
-
-    sel.onchange = () => loadTrip(sel.value);
+    sel.onchange = () => {
+        const t = trips.find(x => x.trip_id == sel.value);
+        if (t) loadTrip(t);
+    };
 }
 
-async function loadTrip(id){
-    const readings = await fetchJSON("/api/readings/" + id);
-    const recent = await fetchJSON("/api/readings/recent");
+async function loadTrip(trip) {
+    currentTripId = trip.trip_id;
 
-    // Recent readings
-    const ul = document.getElementById("recent");
-    ul.innerHTML = "";
-    recent.forEach(r => {
-        const li = document.createElement("li");
-        li.innerText = `${r.timestamp} — ${r.temperature}°C / ${r.humidity}%`;
-        ul.appendChild(li);
-    });
+    document.getElementById("tripMeta").innerHTML = `
+        <div class="trip-badge">Vacina: <span>${trip.vaccine_name}</span></div>
+        <div class="trip-badge">Faixa: <span>${trip.min_temp}°C a ${trip.max_temp}°C</span></div>
+        <div class="trip-badge">Lote: <span>${trip.batch_code}</span></div>`;
 
-    // Map
+    document.getElementById("tempRange").textContent = `Faixa: ${trip.min_temp}°C – ${trip.max_temp}°C`;
+
+    const readings = await fetchJSON("/api/readings/" + trip.trip_id);
+
+    // Mapa
     if (polyline) map.removeLayer(polyline);
     markers.forEach(m => map.removeLayer(m));
     markers = [];
 
-    const coords = readings.map(r => [r.latitude, r.longitude]).filter(c => c[0]);
+    const coords = readings
+        .map(r => [r.latitude, r.longitude])
+        .filter(c => c[0] && c[1]);
 
-    if (coords.length){
-        polyline = L.polyline(coords, {color: 'blue'}).addTo(map);
-        map.fitBounds(polyline.getBounds());
-
-        coords.forEach(c => markers.push(L.circleMarker(c,{radius:4}).addTo(map)));
+    if (coords.length) {
+        polyline = L.polyline(coords, {color: '#38bdf8', weight: 3, opacity: .8}).addTo(map);
+        map.fitBounds(polyline.getBounds(), {padding: [20,20]});
+        coords.forEach(c => markers.push(
+            L.circleMarker(c, {radius: 4, color:'#f87171', fillColor:'#f87171', fillOpacity:1}).addTo(map)
+        ));
     }
 
     // Charts
-    const labels = readings.map(r => r.timestamp);
-    const temps = readings.map(r => r.temperature);
-    const hums = readings.map(r => r.humidity);
+    const labels = readings.map(r => r.timestamp.slice(11,19));
+    const temps  = readings.map(r => r.temperature);
+    const hums   = readings.map(r => r.humidity);
 
-    if (!window.tempChart){
-        window.tempChart = new Chart(document.getElementById("chartTemp"), {
-            type: 'line',
-            data: { labels, datasets: [{ label: 'Temperatura (°C)', data: temps }] }
-        });
-    } else {
-        tempChart.data.labels = labels;
-        tempChart.data.datasets[0].data = temps;
-        tempChart.update();
-    }
+    tempChart.data.labels = labels;
+    tempChart.data.datasets[0].data = temps;
+    tempChart.update();
 
-    if (!window.humChart){
-        window.humChart = new Chart(document.getElementById("chartHum"), {
-            type: 'line',
-            data: { labels, datasets: [{ label: 'Umidade (%)', data: hums }] }
-        });
-    } else {
-        humChart.data.labels = labels;
-        humChart.data.datasets[0].data = hums;
-        humChart.update();
-    }
+    humChart.data.labels = labels;
+    humChart.data.datasets[0].data = hums;
+    humChart.update();
+}
+
+// ---- Refresh automático ----
+async function refreshAll() {
+    await Promise.all([
+        refreshStatus(),
+        refreshAlarms(),
+        refreshDevices(),
+        refreshRecent()
+    ]);
 }
 
 loadTrips();
+refreshAll();
+setInterval(refreshAll, 5000);
 </script>
 </body>
 </html>

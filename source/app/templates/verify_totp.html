@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Verificação MFA — VaccineTransport IoT</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: #0b1120;
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+}
+.card {
+  background: #111827;
+  border: 1px solid #1f2d44;
+  border-radius: 16px;
+  width: 100%; max-width: 360px;
+  box-shadow: 0 32px 64px rgba(0,0,0,.6);
+  overflow: hidden;
+}
+.card-top {
+  background: linear-gradient(135deg, #0ea5e9, #6366f1);
+  padding: 32px;
+  text-align: center;
+}
+.phone-icon {
+  font-size: 3.5rem; display: block; margin-bottom: 12px;
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,.3));
+}
+.card-top h2 { font-size: 1.2rem; font-weight: 700; color: #fff; margin-bottom: 6px; }
+.card-top p  { font-size: .82rem; color: rgba(255,255,255,.7); line-height: 1.5; }
+.card-top p strong { color: #fff; }
+
+.card-body { padding: 28px 28px 24px; }
+
+.info-box {
+  background: rgba(14,165,233,.08); border: 1px solid rgba(14,165,233,.18);
+  border-radius: 8px; padding: 10px 14px;
+  font-size: .78rem; color: #64748b; line-height: 1.6; margin-bottom: 20px;
+  text-align: center;
+}
+.info-box strong { color: #38bdf8; }
+
+label { display: block; font-size: .78rem; color: #94a3b8; margin-bottom: 6px; font-weight: 500; text-align: center; }
+input[type=text] {
+  width: 100%;
+  background: #0b1120; border: 1px solid #1f2d44; border-radius: 9px;
+  padding: .85rem; color: #f1f5f9;
+  font-size: 2rem; text-align: center;
+  letter-spacing: .5em; outline: none;
+  transition: border-color .2s, box-shadow .2s;
+  margin-bottom: 14px;
+}
+input:focus { border-color: #0ea5e9; box-shadow: 0 0 0 3px rgba(14,165,233,.12); }
+.btn {
+  width: 100%; background: linear-gradient(135deg, #0ea5e9, #0284c7);
+  color: #fff; border: none; border-radius: 9px;
+  padding: .78rem; font-size: .9rem; font-weight: 600;
+  cursor: pointer; transition: opacity .2s, transform .1s;
+}
+.btn:hover { opacity: .9; transform: translateY(-1px); }
+.error {
+  background: rgba(239,68,68,.08); border: 1px solid rgba(239,68,68,.25);
+  border-left: 3px solid #ef4444;
+  color: #fca5a5; border-radius: 8px;
+  padding: .65rem .9rem; font-size: .82rem; margin-bottom: 16px;
+  display: flex; align-items: center; gap: 7px;
+}
+.back-link {
+  text-align: center; margin-top: 16px;
+  font-size: .78rem; color: #334155;
+}
+.back-link a { color: #38bdf8; text-decoration: none; }
+.back-link a:hover { text-decoration: underline; }
+.timer {
+  text-align: center; font-size: .72rem; color: #475569;
+  margin-bottom: 14px;
+}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="card-top">
+    <span class="phone-icon">📱</span>
+    <h2>Verificação em Dois Fatores</h2>
+    <p>Abra o <strong>Google Authenticator</strong> e insira o código para <strong>VaccineTransport IoT</strong></p>
+  </div>
+
+  <div class="card-body">
+    <div class="info-box">
+      O código se renova a cada <strong>30 segundos</strong>.<br>
+      Certifique-se de inserir o código atual.
+    </div>
+
+    {% if error %}
+    <div class="error"><span>⚠️</span> {{ error }}</div>
+    {% endif %}
+
+    <form method="POST" action="/verify-totp">
+      <label for="code">Código TOTP</label>
+      <input type="text" id="code" name="code" maxlength="6"
+             placeholder="000000" autocomplete="one-time-code"
+             inputmode="numeric" pattern="[0-9]{6}" required autofocus>
+      <button type="submit" class="btn">Verificar →</button>
+    </form>
+
+    <p class="back-link"><a href="/login">← Voltar ao login</a></p>
+  </div>
+</div>
+</body>
+</html>

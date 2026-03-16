@@ -10,12 +10,13 @@ USE vaccine_transport;
 -- USERS TABLE
 -- ============================
 CREATE TABLE users (
-    user_id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    email VARCHAR(150) NOT NULL UNIQUE,
+    user_id       INT AUTO_INCREMENT PRIMARY KEY,
+    name          VARCHAR(100) NOT NULL,
+    email         VARCHAR(150) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
-    role ENUM('admin','operator') DEFAULT 'operator',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    role          ENUM('admin','operator') DEFAULT 'operator',
+    totp_secret   VARCHAR(32) NULL,          -- Chave TOTP (M2 — MFA)
+    created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- ============================
@@ -83,6 +84,34 @@ CREATE TABLE readings (
     FOREIGN KEY (batch_id) REFERENCES vaccine_batch(batch_id)
 );
 
+-- ============================
+-- AUDIT LOG TABLE (M1+)
+-- Registra ações relevantes do sistema para rastreabilidade
+-- ============================
+CREATE TABLE audit_log (
+    log_id       INT AUTO_INCREMENT PRIMARY KEY,
+    user_id      INT NULL,                        -- NULL = ação do sistema/IoT
+    action       VARCHAR(100) NOT NULL,           -- Ex: 'login', 'trip_start', 'alarm_ack'
+    target_table VARCHAR(50)  NULL,               -- Tabela afetada
+    target_id    INT          NULL,               -- ID do registro afetado
+    ip_address   VARCHAR(45)  NULL,
+    details      TEXT         NULL,               -- JSON com detalhes adicionais
+    created_at   DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE SET NULL
+);
+
+-- ============================
+-- SEEN NONCES TABLE (M2)
+-- Usada para mitigação de replay attacks
+-- Populada no Milestone 2 com validação HMAC
+-- ============================
+CREATE TABLE seen_nonces (
+    nonce       VARCHAR(64) NOT NULL PRIMARY KEY,
+    device_id   VARCHAR(100) NOT NULL,
+    received_at DATETIME NOT NULL,
+    INDEX idx_received_at (received_at)   -- Para limpeza periódica eficiente
+);
+
 
 
 
@@ -95,6 +124,8 @@ USE vaccine_transport;
 -- 0. LIMPEZA (Opcional: remove dados antigos se existirem)
 -- ==========================================================
 SET FOREIGN_KEY_CHECKS = 0;
+TRUNCATE TABLE seen_nonces;
+TRUNCATE TABLE audit_log;
 TRUNCATE TABLE readings;
 TRUNCATE TABLE trips;
 TRUNCATE TABLE vaccine_batch;
@@ -106,11 +137,14 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- ============================
 -- 1. POPULAR USUÁRIOS
 -- ============================
+-- Senhas bcrypt geradas com: python -c "import bcrypt; print(bcrypt.hashpw(b'senha', bcrypt.gensalt()).decode())"
+-- admin123  → hash abaixo
+-- op123     → hash abaixo
 INSERT INTO users (name, email, password_hash, role) VALUES
-('Carlos Silva', 'admin@logistica.com', 'hash_segura_123', 'admin'),
-('Maria Oliveira', 'maria@transporte.com', 'hash_operador_456', 'operator'),
-('João Santos', 'joao@transporte.com', 'hash_operador_789', 'operator'),
-('Ana Costa', 'ana@monitoramento.com', 'hash_operador_000', 'operator');
+('Carlos Silva',  'admin@logistica.com',    '$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36DQBuMpV9h.L7MfxlJiUAy', 'admin'),
+('Maria Oliveira','maria@transporte.com',   '$2b$12$I5vqwLXClQELkxIGGEQUOuqUMt4TKdR9W.8jGaqyK9TKNiJHPWIJa', 'operator'),
+('João Santos',   'joao@transporte.com',    '$2b$12$I5vqwLXClQELkxIGGEQUOuqUMt4TKdR9W.8jGaqyK9TKNiJHPWIJa', 'operator'),
+('Ana Costa',     'ana@monitoramento.com',  '$2b$12$I5vqwLXClQELkxIGGEQUOuqUMt4TKdR9W.8jGaqyK9TKNiJHPWIJa', 'operator');
 
 -- ============================
 -- 2. POPULAR DISPOSITIVOS

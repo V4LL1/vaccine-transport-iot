@@ -1,0 +1,9 @@
+source/app/.env
+certs/ca.key
+certs/broker.key
+certs/broker.crt
+certs/ca.crt
+__pycache__/
+*.pyc
+venv/
+source/venv/
