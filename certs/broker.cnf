@@ -1,19 +1,19 @@
 [req]
-default_bits = 2048
-prompt = no
-default_md = sha256
+default_bits       = 2048
+prompt             = no
+default_md         = sha256
 distinguished_name = dn
-req_extensions = v3_req
+req_extensions     = req_ext
 
 [dn]
-C=BR
-ST=SP
-L=Campinas
-O=VaccineTransport
-OU=IoT-Broker
-CN=10.0.0.175
+C  = BR
+ST = SP
+L  = Campinas
+O  = VaccineTransport
+OU = IoT-Security
+CN = 10.0.0.175
 
-[v3_req]
+[req_ext]
 subjectAltName = @alt_names
 
 [alt_names]

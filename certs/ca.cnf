@@ -1,20 +1,20 @@
 [req]
-default_bits = 2048
-prompt = no
-default_md = sha256
+default_bits       = 2048
+prompt             = no
+default_md         = sha256
 distinguished_name = dn
-x509_extensions = v3_ca
+x509_extensions    = v3_ca
 
 [dn]
-C=BR
-ST=SP
-L=Campinas
-O=VaccineTransport
-OU=IoT-Security
-CN=VaccineTransport-CA
+C  = BR
+ST = SP
+L  = Campinas
+O  = VaccineTransport
+OU = IoT-Security
+CN = VaccineTransport-CA
 
 [v3_ca]
 subjectKeyIdentifier = hash
 authorityKeyIdentifier = keyid:always,issuer
-basicConstraints = critical, CA:TRUE, pathlen:0
-keyUsage = critical, digitalSignature, cRLSign, keyCertSign
+basicConstraints = critical,CA:TRUE
+keyUsage = critical,keyCertSign,cRLSign

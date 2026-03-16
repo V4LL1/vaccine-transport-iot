@@ -1,9 +1,18 @@
+# Variáveis de ambiente — nunca commitar
 source/app/.env
-certs/ca.key
-certs/broker.key
-certs/broker.crt
-certs/ca.crt
+
+# Chaves privadas e certificados — nunca commitar (qualquer subpasta)
+**/*.key
+**/*.pem
+certs/
+!certs/gerar_certs.sh
+!certs/*.cnf
+
+# Python
 __pycache__/
 *.pyc
 venv/
 source/venv/
+
+# Logs
+*.log
