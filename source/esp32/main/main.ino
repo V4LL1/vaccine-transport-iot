@@ -44,38 +44,28 @@ const unsigned long HEARTBEAT_INTERVAL  = 30000;
 // Certificado da CA que assinou o broker — permite verificar TLS
 static const char CA_CERT[] PROGMEM = R"EOF(
 -----BEGIN CERTIFICATE-----
-MIIF6zCCA9OgAwIBAgIUeQhtIbF2/Z3rdrdlwk7KHKFmBlYwDQYJKoZIhvcNAQEL
+MIID7jCCAtagAwIBAgIUNIsDbyrC1r3URaK780MGStuMLb8wDQYJKoZIhvcNAQEL
 BQAwfTELMAkGA1UEBhMCQlIxCzAJBgNVBAgMAlNQMREwDwYDVQQHDAhDYW1waW5h
 czEZMBcGA1UECgwQVmFjY2luZVRyYW5zcG9ydDEVMBMGA1UECwwMSW9ULVNlY3Vy
-aXR5MRwwGgYDVQQDDBNWYWNjaW5lVHJhbnNwb3J0LUNBMB4XDTI2MDMxNTE0MzA1
-OFoXDTM2MDMxMjE0MzA1OFowfTELMAkGA1UEBhMCQlIxCzAJBgNVBAgMAlNQMREw
+aXR5MRwwGgYDVQQDDBNWYWNjaW5lVHJhbnNwb3J0LUNBMB4XDTI2MDMxNjAxNDYy
+MFoXDTM2MDMxMzAxNDYyMFowfTELMAkGA1UEBhMCQlIxCzAJBgNVBAgMAlNQMREw
 DwYDVQQHDAhDYW1waW5hczEZMBcGA1UECgwQVmFjY2luZVRyYW5zcG9ydDEVMBMG
 A1UECwwMSW9ULVNlY3VyaXR5MRwwGgYDVQQDDBNWYWNjaW5lVHJhbnNwb3J0LUNB
-MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAniFf2lJAoGxr6ixXf/mr
-dsfKyEQzgQFzQf8pl8ZS9iOQoGj+gdnjsQVDrmF5FT+r8SR/gvxULmiaA7xhpLkn
-/MERy4UxSTgQGzZ4cz0qd9SWVGsmcYgzQiDP3LDxBLHAysR9XukpuNaVEmr2P5Y9
-8Y9pByBMYT+zwe6tBkl4uubMFy3va2Jdy+qtCNySaKzfL9SG06n/CuFD09f6r6pv
-j93fcZD2Hw2c27qnYWEbJwdf7GGOaM99RuAiE3BOW3P0b75jSoz4nRmbURNKgbOY
-25BK+VLzh4REUrhKgTsDZF5YnyO70xQCg70WIkKDDxVhe97RM3o8x1KwL/xKy2rw
-L+A5hl8AAOwYUblhlTo1n+2LTs6aClH/NO8tSXrCb7J+0rb+5CAoA4H8bU5MJ39m
-VI4ciSwadAoEjXtyPG3Jqgwxye7QEV6XadA6LMn1FZJ5nvcqn27RM+DQlLASEK7n
-r1cmNmjjAsUIE4F3yi4Qzr2WEc3eysJXIMGAqM2Z8e2PSi5RU76Ho7aP0EKtKcTq
-YbD7aSbcNcrOu1qciL26FNx3Vu3PuRLkh/M0khllNvWVTS5c99oF717KAk8LTwh2
-POYsL5edCdkvuxfpCRBvC3gbr8mMxeG4FSoixtTSWAsUp11lBBgvUJJNz0gvd2Jr
-NlNiWna6gN1H2huOmTivObsCAwEAAaNjMGEwHQYDVR0OBBYEFJg4odf5zH4khFpb
-VBq+dINaNQaDMB8GA1UdIwQYMBaAFJg4odf5zH4khFpbVBq+dINaNQaDMA8GA1Ud
-EwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgGGMA0GCSqGSIb3DQEBCwUAA4ICAQAb
-afdRYjC5Ew31fZXkCdPc34EYf0E352x8fieFWh2MP4NovmtOcyy7H70WaiwTXow2
-BNR5UH8RZR+V/BVKf+LxZOBcF5TLyIju2GejK65+WCpraSHl2ZdScWiQvAXZf0E1
-/yJpbk7gRJ82lwAwqbnNKmaC/reyK3SJfMzlKlVTT8HIrVhIDSfQWTcWN051Le5L
-eZySJUTLJzJAQxa7qJSPyPXm89zG1wFU0SzQftvI7b1nD+ZX4QyNuPMW3KCWwvQE
-reTMofhi/F2eg6thZdXLO2LRdTqKPPu5fAtWSZnVI7UwaT1HSrYUu/Rzof060j/5
-qws64sCw9eB9l68mh4+x3Y0YN2LgCQYCv5RB3jWN7hTL8BsiiiTTiZiiiNwHnvrV
-GQnCycZZIgf7z+OKvL1aDQYvJG+GoN1Fn50MjEcbY1roFSIzqAxqSLE5ilLT3ZJF
-ajhle3c9+k3kt00DKU7wkau2TM/A8VLaBuwOQcDlWv6XdgvSG7gTJKjx+JemHEJZ
-mSEFOnbyG5TpQue0NeFTqyETQKjgF6xffCCZemBU79FV0FmpDio5AVdVLcUYuX+r
-U2nD/MqbRPCL1F3cQysAOiWQ5RLw/8ERZgd+6afpcNPh7mT6A6vkshrC5RQK5CFc
-AcIP2D9H/pr6/yFjxGwAl9ig2xdAYW5IOUW3xqPYtQ==
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4sN1aahenwhtajLI9JvQ
+i0i383krzs0bo3Ap7RLCPuVvbN16W9olWbs/MqLvp3TY1Xuhp6TUvf6hrwPABk9z
+f8A93wPoAH+hF6acn84rmBwp4VojTPA0Js/0R2x1WICuF9dNA6ZdYTe6xg1UKY1t
+E0FPhzysXmQWai5yPfzyoUDrD0+uD4gFy45X11FYbdC7ViYZb0V1yMwxjtr66yJr
+EIEKpmKUAzS5X1GlyQszz49xkc0ZIPWn9b1JI1P2d1qtuAFdwX0wUBYDLrDOkPVf
++sa5STnX0gqBgTCUCCNMn9V9laU8DFJAVrNOUO9Y23UnDfPvf2LlfRyYa6+kHt02
+VQIDAQABo2YwZDAdBgNVHQ4EFgQU5By5LzdOMiDlb5omygKkm/Yeu4AwHwYDVR0j
+BBgwFoAU5By5LzdOMiDlb5omygKkm/Yeu4AwEgYDVR0TAQH/BAgwBgEB/wIBADAO
+BgNVHQ8BAf8EBAMCAYYwDQYJKoZIhvcNAQELBQADggEBABBMP/KpcLj2FKlCkbPp
+aCsnBNcK2Uhe7xkfSeoCB3i6geP1eww3tsWWT/QZr/c1ip7ADATvV2z3iN4Ndlzk
+WhR5EWA30E1U71W5uaacugCZIMHOtGFDS9RnwMw7QX3wZY6ihF6+3bouJJxNag7k
+D6A0V1lKlLwk5DbGmhYMs4CrNkb2FILAFCGNhyVxYO8tMrcw0X70KCc1Nmhpwmc/
+M9HfgfBFJbAFYOMVLhC19ZCXEoQixKy796QlAkefb/5kLdRA8LPbVJKP3X8DpVHx
+WUfzJXk7Xs6mFHaVXKfK5TldJaHeNTRw/GdzKvNDs1kk9AOURJb8tTS3FXowItYy
+Euw=
 -----END CERTIFICATE-----
 )EOF";
 // =========================================================
@@ -194,18 +184,7 @@ String buildTimestamp() {
 
 // -------------------------------------------------------
 void publishReading(float temp, float hum) {
-  String nonce = generateNonce();
-  String ts    = buildTimestamp();
-
-  // Monta payload parcial para calcular HMAC
-  // Formato: device_id|trip_id|timestamp|temperature|humidity|nonce
-  String hmacData = String(DEVICE_ID) + "|" +
-                    String(TRIP_ID) + "|" +
-                    ts + "|" +
-                    String(temp, 2) + "|" +
-                    String(hum, 2) + "|" +
-                    nonce;
-  String hmac = computeHMAC(hmacData);
+  String ts = buildTimestamp();
 
   StaticJsonDocument<512> doc;
   doc["device_id"]   = DEVICE_ID;
@@ -224,8 +203,8 @@ void publishReading(float temp, float hum) {
     doc["satellites"] = 0;
   }
 
-  doc["hmac"]  = hmac;
-  doc["nonce"] = nonce;
+  doc["hmac"]  = "";
+  doc["nonce"] = "";
 
   char payload[512];
   serializeJson(doc, payload, sizeof(payload));
@@ -267,6 +246,7 @@ void setup() {
   // Configurar TLS com o certificado da CA
   wifiClientSecure.setCACert(CA_CERT);
 
+  mqttClient.setBufferSize(768);
   mqttClient.setServer(MQTT_BROKER, MQTT_PORT);
 
   Serial.println("=== Sistema pronto (TLS ativo) ===\n");
