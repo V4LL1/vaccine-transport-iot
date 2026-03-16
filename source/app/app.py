@@ -5,6 +5,7 @@ import os
 import io
 import base64
 from datetime import datetime, timezone
+from functools import wraps
 
 from flask import Flask, jsonify, render_template, request, redirect, url_for, session
 from flask_login import (
@@ -36,6 +37,20 @@ MQTT_PASSWORD = os.getenv("MQTT_PASSWORD", "")
 
 TOPIC_READINGS  = "vaccines/readings"
 TOPIC_HEARTBEAT = "vaccines/heartbeat"
+
+# ======== RBAC — Permissões por role ========
+PERMISSIONS = {
+    "admin": {
+        "view_dashboard", "view_readings", "view_devices", "view_alarms",
+        "view_audit",
+        "register_device", "deactivate_device",
+        "manage_trips", "create_trip", "close_trip",
+        "manage_users",
+    },
+    "operator": {
+        "view_dashboard", "view_readings", "view_devices", "view_alarms",
+    },
+}
 # ================================
 
 logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(message)s")
@@ -47,7 +62,6 @@ login_manager = LoginManager(app)
 login_manager.login_view = "login"
 login_manager.login_message = "Acesso restrito. Faça login."
 
-# Estado do broker
 mqtt_status = {"connected": False, "last_message": None}
 
 
@@ -58,14 +72,50 @@ def db():
     return mysql.connector.connect(**DB)
 
 
-def get_batch_id_for_trip(trip_id):
+def audit(action, target_table=None, target_id=None, details=None, user_id=None, ip=None):
+    try:
+        conn = db()
+        cur = conn.cursor()
+        cur.execute(
+            """INSERT INTO audit_log (user_id, action, target_table, target_id, ip_address, details)
+               VALUES (%s, %s, %s, %s, %s, %s)""",
+            (
+                user_id,
+                action,
+                target_table,
+                target_id,
+                ip or (request.remote_addr if request else None),
+                json.dumps(details) if details else None,
+            ),
+        )
+        conn.commit()
+        cur.close()
+        conn.close()
+    except Exception as e:
+        logging.warning(f"Audit log falhou: {e}")
+
+
+def ensure_device_exists(serial_number):
+    """Cria dispositivo como 'pending' na primeira vez que aparece. Retorna o device dict."""
     conn = db()
-    cur = conn.cursor()
-    cur.execute("SELECT batch_id FROM trips WHERE trip_id = %s", (trip_id,))
-    row = cur.fetchone()
+    cur = conn.cursor(dictionary=True)
+    cur.execute("SELECT * FROM devices WHERE serial_number = %s", (serial_number,))
+    device = cur.fetchone()
+    if not device:
+        cur.execute(
+            "INSERT INTO devices (serial_number, registration_status, last_seen) VALUES (%s, 'pending', NOW())",
+            (serial_number,)
+        )
+        conn.commit()
+        device_id = cur.lastrowid
+        logging.info(f"MQTT: Novo dispositivo descoberto: {serial_number}")
+        audit("device_discovered", target_table="devices", target_id=device_id,
+              details={"serial_number": serial_number})
+        cur.execute("SELECT * FROM devices WHERE device_id = %s", (device_id,))
+        device = cur.fetchone()
     cur.close()
     conn.close()
-    return row[0] if row else None
+    return device
 
 
 def update_device_last_seen(serial_number):
@@ -80,28 +130,18 @@ def update_device_last_seen(serial_number):
     conn.close()
 
 
-def audit(action, target_table=None, target_id=None, details=None, user_id=None, ip=None):
-    """Registra uma ação no audit_log."""
-    try:
-        conn = db()
-        cur = conn.cursor()
-        cur.execute(
-            """INSERT INTO audit_log (user_id, action, target_table, target_id, ip_address, details)
-               VALUES (%s, %s, %s, %s, %s, %s)""",
-            (
-                user_id,
-                action,
-                target_table,
-                target_id,
-                ip or request.remote_addr if request else None,
-                json.dumps(details) if details else None,
-            ),
-        )
-        conn.commit()
-        cur.close()
-        conn.close()
-    except Exception as e:
-        logging.warning(f"Audit log falhou: {e}")
+def get_active_trip_for_device(device_id):
+    """Retorna viagem em andamento para o device_id (PK). None se não houver."""
+    conn = db()
+    cur = conn.cursor(dictionary=True)
+    cur.execute(
+        "SELECT trip_id, batch_id FROM trips WHERE device_id = %s AND end_time IS NULL LIMIT 1",
+        (device_id,)
+    )
+    trip = cur.fetchone()
+    cur.close()
+    conn.close()
+    return trip
 
 
 # -------------------------------------------------------
@@ -114,6 +154,9 @@ class User(UserMixin):
         self.email       = email
         self.role        = role
         self.totp_secret = totp_secret
+
+    def has_permission(self, permission):
+        return permission in PERMISSIONS.get(self.role, set())
 
 
 @login_manager.user_loader
@@ -132,9 +175,24 @@ def load_user(user_id):
     return None
 
 
+def require_permission(permission):
+    """Decorator: exige permissão específica para a role do usuário."""
+    def decorator(f):
+        @wraps(f)
+        def decorated(*args, **kwargs):
+            if not current_user.is_authenticated:
+                return jsonify({"error": "Não autenticado"}), 401
+            if not current_user.has_permission(permission):
+                return jsonify({
+                    "error": f"Acesso negado — sua conta ({current_user.role}) não tem permissão para '{permission}'"
+                }), 403
+            return f(*args, **kwargs)
+        return decorated
+    return decorator
+
+
+# Mantido para compatibilidade com rotas existentes
 def admin_required(f):
-    """Decorator: exige role = admin."""
-    from functools import wraps
     @wraps(f)
     def decorated(*args, **kwargs):
         if not current_user.is_authenticated or current_user.role != "admin":
@@ -167,13 +225,11 @@ def login():
         conn.close()
 
         if row and bcrypt.checkpw(password, row["password_hash"].encode()):
-            # Senha correta — salvar user_id na session para etapa TOTP
-            session["pending_user_id"] = row["user_id"]
+            session["pending_user_id"]    = row["user_id"]
             session["pending_user_email"] = row["email"]
             audit("login_password_ok", details={"email": email}, ip=request.remote_addr)
 
             if not row["totp_secret"]:
-                # Primeiro login — redirecionar para configurar TOTP
                 return redirect(url_for("setup_totp"))
             return redirect(url_for("verify_totp"))
         else:
@@ -192,20 +248,17 @@ def setup_totp():
     email   = session.get("pending_user_email", "user")
 
     if request.method == "GET":
-        # Gerar novo secret e armazenar temporariamente na session
         secret = pyotp.random_base32()
         session["totp_setup_secret"] = secret
         uri = pyotp.totp.TOTP(secret).provisioning_uri(
             name=email, issuer_name="VaccineTransport IoT"
         )
-        # Gerar QR code em base64
         img = qrcode.make(uri)
         buf = io.BytesIO()
         img.save(buf, format="PNG")
         qr_b64 = base64.b64encode(buf.getvalue()).decode()
         return render_template("setup_totp.html", qr_b64=qr_b64, secret=secret)
 
-    # POST — verificar código antes de salvar
     code   = request.form.get("code", "")
     secret = session.get("totp_setup_secret", "")
     if pyotp.TOTP(secret).verify(code, valid_window=1):
@@ -259,7 +312,7 @@ def logout():
 
 
 # -------------------------------------------------------
-# MQTT subscriber (roda em thread separada)
+# MQTT subscriber (thread separada)
 # -------------------------------------------------------
 def on_connect(client, userdata, flags, reason_code, properties):
     if reason_code == 0:
@@ -286,35 +339,49 @@ def on_message(client, userdata, msg):
         logging.error(f"MQTT: Payload inválido em {msg.topic}")
         return
 
-    if msg.topic == TOPIC_HEARTBEAT:
-        device_id = payload.get("device_id")
-        if device_id:
-            update_device_last_seen(device_id)
+    device_serial = payload.get("device_id")
+    if not device_serial:
         return
 
-    # --- Processar leitura de sensor ---
-    device_id   = payload.get("device_id")
-    trip_id     = payload.get("trip_id")
+    # Heartbeat — só atualiza last_seen e auto-descobre
+    if msg.topic == TOPIC_HEARTBEAT:
+        ensure_device_exists(device_serial)
+        update_device_last_seen(device_serial)
+        return
+
+    # --- Leitura de sensor ---
+    # 1. Auto-descobrir / buscar dispositivo
+    device = ensure_device_exists(device_serial)
+    update_device_last_seen(device_serial)
+
+    # 2. Verificar se está registrado (admin atribuiu a uma viagem)
+    if device.get("registration_status") != "active":
+        logging.info(f"MQTT: Leitura de dispositivo pendente [{device_serial}] — aguardando registro por admin.")
+        return
+
+    # 3. Buscar viagem em andamento atribuída a este dispositivo
+    active_trip = get_active_trip_for_device(device["device_id"])
+    if not active_trip:
+        logging.warning(f"MQTT: Dispositivo [{device_serial}] ativo mas sem viagem em andamento.")
+        return
+
+    trip_id  = active_trip["trip_id"]
+    batch_id = active_trip["batch_id"]
+
     temperature = payload.get("temperature")
     humidity    = payload.get("humidity")
     latitude    = payload.get("latitude", 0.0)
     longitude   = payload.get("longitude", 0.0)
 
-    # Normaliza timestamp; usa hora do servidor se GPS sem fix
+    if None in (temperature, humidity):
+        logging.warning("MQTT: Payload sem temperatura/humidade, ignorado.")
+        return
+
     raw_ts = payload.get("timestamp") or ""
     if not raw_ts or raw_ts.startswith("2000-00-00") or raw_ts.startswith("2000-01-01"):
         timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
     else:
         timestamp = raw_ts.replace("T", " ").replace("Z", "").split(".")[0]
-
-    if None in (device_id, trip_id, temperature, humidity):
-        logging.warning("MQTT: Payload incompleto, ignorado.")
-        return
-
-    batch_id = get_batch_id_for_trip(trip_id)
-    if not batch_id:
-        logging.warning(f"MQTT: trip_id={trip_id} não encontrado no banco.")
-        return
 
     try:
         conn = db()
@@ -331,48 +398,64 @@ def on_message(client, userdata, msg):
         cur.close()
         conn.close()
 
-        update_device_last_seen(device_id)
-        logging.info(f"MQTT: Leitura gravada — {temperature}°C / {humidity}% (trip {trip_id})")
-
-        # Audit log da leitura recebida
+        logging.info(f"MQTT: Leitura gravada — {temperature}°C / {humidity}% (device={device_serial}, trip={trip_id})")
         audit("reading_received", target_table="readings", target_id=reading_id,
-              details={"device_id": device_id, "temp": temperature, "humidity": humidity})
+              details={"device_id": device_serial, "temp": temperature, "humidity": humidity, "trip_id": trip_id})
 
     except Exception as e:
         logging.error(f"MQTT: Erro ao gravar leitura: {e}")
 
 
 def start_mqtt_subscriber():
+    import time as _time
+
+    # Client created once — reused across reconnects so paho never fights itself
     client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="flask-subscriber")
     client.on_connect    = on_connect
     client.on_disconnect = on_disconnect
     client.on_message    = on_message
 
-    # TLS — ativar se CA cert estiver configurado
     ca_cert = MQTT_CA_CERT
+    # If relative path, resolve it against the directory of this script (not CWD)
+    if ca_cert and not os.path.isabs(ca_cert):
+        ca_cert = os.path.join(os.path.dirname(os.path.abspath(__file__)), ca_cert)
     if ca_cert and os.path.isfile(ca_cert):
         client.tls_set(ca_certs=ca_cert)
         logging.info(f"MQTT: TLS ativado com CA={ca_cert}")
     else:
-        logging.warning("MQTT: CA cert não encontrado — conectando sem TLS (modo dev)")
+        logging.warning(f"MQTT: CA cert não encontrado ({ca_cert}) — conectando sem TLS (modo dev)")
 
     if MQTT_USERNAME:
         client.username_pw_set(MQTT_USERNAME, MQTT_PASSWORD)
 
-    try:
-        client.connect(MQTT_BROKER, MQTT_PORT, keepalive=60)
-        client.loop_forever()
-    except Exception as e:
-        logging.error(f"MQTT: Não foi possível conectar ao broker: {e}")
+    # paho will wait 5–60s between automatic reconnect attempts
+    client.reconnect_delay_set(min_delay=5, max_delay=60)
+
+    # Outer loop: only needed if connect() itself raises before loop_forever() starts
+    retry_delay = 5
+    while True:
+        try:
+            client.connect(MQTT_BROKER, MQTT_PORT, keepalive=60)
+            client.loop_forever()   # blocks; paho handles reconnects internally
+        except Exception as e:
+            logging.error(f"MQTT: Conexão falhou: {e}. Tentando em {retry_delay}s...")
+        mqtt_status["connected"] = False
+        _time.sleep(retry_delay)
+        retry_delay = min(retry_delay * 2, 60)
 
 
 # -------------------------------------------------------
-# Rotas Flask — todas protegidas por @login_required
+# Rotas Flask — Dashboard
 # -------------------------------------------------------
 @app.route("/")
 @login_required
 def index():
-    return render_template("index.html")
+    return render_template(
+        "index.html",
+        user_name=current_user.name,
+        user_role=current_user.role,
+        user_permissions=list(PERMISSIONS.get(current_user.role, set())),
+    )
 
 
 @app.route("/api/trips")
@@ -383,10 +466,12 @@ def trips():
     cur.execute("""
         SELECT t.trip_id, t.start_time, t.end_time, t.origin, t.destination,
                b.batch_code, v.name AS vaccine_name,
-               v.min_temp, v.max_temp
+               v.min_temp, v.max_temp,
+               d.serial_number AS device_serial, d.name AS device_name
         FROM trips t
         JOIN vaccine_batch b ON t.batch_id = b.batch_id
         JOIN vaccines v ON b.vaccine_id = v.vaccine_id
+        LEFT JOIN devices d ON t.device_id = d.device_id
         ORDER BY t.start_time DESC
     """)
     data = cur.fetchall()
@@ -468,15 +553,22 @@ def devices():
     conn = db()
     cur  = conn.cursor(dictionary=True)
     cur.execute("""
-        SELECT device_id, serial_number, status, last_seen,
+        SELECT d.device_id, d.serial_number, d.name, d.status,
+               d.registration_status, d.last_seen,
+               u.name AS registered_by_name,
+               d.registered_at,
                CASE
-                 WHEN last_seen IS NULL THEN 'never'
-                 WHEN last_seen >= NOW() - INTERVAL 60 SECOND THEN 'online'
-                 WHEN last_seen >= NOW() - INTERVAL 5 MINUTE  THEN 'recent'
+                 WHEN d.last_seen IS NULL THEN 'never'
+                 WHEN d.last_seen >= NOW() - INTERVAL 60 SECOND THEN 'online'
+                 WHEN d.last_seen >= NOW() - INTERVAL 5 MINUTE  THEN 'recent'
                  ELSE 'offline'
-               END AS connectivity
-        FROM devices
-        ORDER BY serial_number
+               END AS connectivity,
+               t.trip_id AS active_trip_id,
+               t.destination AS active_trip_dest
+        FROM devices d
+        LEFT JOIN users u ON d.registered_by = u.user_id
+        LEFT JOIN trips t ON t.device_id = d.device_id AND t.end_time IS NULL
+        ORDER BY d.registration_status ASC, d.serial_number
     """)
     data = cur.fetchall()
     cur.close()
@@ -487,8 +579,20 @@ def devices():
 @app.route("/api/status")
 @login_required
 def status():
+    connected = mqtt_status["connected"]
+
+    # Grace period: if we received a message in the last 90s, treat as connected
+    # even if on_disconnect fired (covers brief reconnect windows)
+    if not connected and mqtt_status["last_message"]:
+        try:
+            last = datetime.fromisoformat(mqtt_status["last_message"])
+            if (datetime.now(timezone.utc) - last).total_seconds() < 90:
+                connected = True
+        except Exception:
+            pass
+
     return jsonify({
-        "broker_connected":  mqtt_status["connected"],
+        "broker_connected":  connected,
         "last_mqtt_message": mqtt_status["last_message"],
         "server_time":       datetime.now(timezone.utc).isoformat()
     })
@@ -496,9 +600,8 @@ def status():
 
 @app.route("/api/audit")
 @login_required
-@admin_required
+@require_permission("view_audit")
 def audit_log():
-    """Retorna os últimos 200 registros do audit_log (somente admin)."""
     conn = db()
     cur  = conn.cursor(dictionary=True)
     cur.execute("""
@@ -509,6 +612,224 @@ def audit_log():
         LEFT JOIN users u ON l.user_id = u.user_id
         ORDER BY l.created_at DESC
         LIMIT 200
+    """)
+    data = cur.fetchall()
+    cur.close()
+    conn.close()
+    return jsonify(data)
+
+
+# -------------------------------------------------------
+# Rotas Admin — Gestão de Dispositivos
+# -------------------------------------------------------
+@app.route("/api/admin/devices/pending")
+@login_required
+@require_permission("register_device")
+def admin_pending_devices():
+    """Lista dispositivos descobertos mas não registrados."""
+    conn = db()
+    cur  = conn.cursor(dictionary=True)
+    cur.execute("""
+        SELECT device_id, serial_number, last_seen,
+               CASE
+                 WHEN last_seen >= NOW() - INTERVAL 60 SECOND THEN 'online'
+                 WHEN last_seen >= NOW() - INTERVAL 5 MINUTE  THEN 'recent'
+                 ELSE 'offline'
+               END AS connectivity
+        FROM devices
+        WHERE registration_status = 'pending'
+        ORDER BY last_seen DESC
+    """)
+    data = cur.fetchall()
+    cur.close()
+    conn.close()
+    return jsonify(data)
+
+
+@app.route("/api/admin/devices/<int:device_id>/register", methods=["POST"])
+@login_required
+@require_permission("register_device")
+def admin_register_device(device_id):
+    """Registra um dispositivo: atribui nome e viagem."""
+    body     = request.get_json(force=True)
+    name     = body.get("name", "").strip()
+    trip_id  = body.get("trip_id")
+
+    if not name:
+        return jsonify({"error": "Nome do dispositivo obrigatório"}), 400
+    if not trip_id:
+        return jsonify({"error": "Viagem obrigatória"}), 400
+
+    conn = db()
+    cur  = conn.cursor(dictionary=True)
+
+    # Verifica se dispositivo existe e está pendente
+    cur.execute("SELECT * FROM devices WHERE device_id = %s", (device_id,))
+    device = cur.fetchone()
+    if not device:
+        cur.close(); conn.close()
+        return jsonify({"error": "Dispositivo não encontrado"}), 404
+    if device["registration_status"] == "active":
+        cur.close(); conn.close()
+        return jsonify({"error": "Dispositivo já está registrado"}), 409
+
+    # Verifica se viagem existe e está sem device atribuído
+    cur.execute("SELECT * FROM trips WHERE trip_id = %s AND end_time IS NULL", (trip_id,))
+    trip = cur.fetchone()
+    if not trip:
+        cur.close(); conn.close()
+        return jsonify({"error": "Viagem não encontrada ou já encerrada"}), 404
+
+    # Atualiza dispositivo
+    cur.execute("""
+        UPDATE devices
+        SET name = %s,
+            registration_status = 'active',
+            status = 'active',
+            registered_by = %s,
+            registered_at = NOW()
+        WHERE device_id = %s
+    """, (name, current_user.id, device_id))
+
+    # Atribui dispositivo à viagem
+    cur.execute(
+        "UPDATE trips SET device_id = %s WHERE trip_id = %s",
+        (device_id, trip_id)
+    )
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    audit("device_registered", target_table="devices", target_id=device_id,
+          user_id=current_user.id, ip=request.remote_addr,
+          details={"name": name, "trip_id": trip_id, "serial": device["serial_number"]})
+
+    logging.info(f"Dispositivo {device['serial_number']} registrado como '{name}' na viagem {trip_id} por {current_user.name}")
+    return jsonify({"message": f"Dispositivo '{name}' registrado com sucesso na viagem {trip_id}"}), 200
+
+
+@app.route("/api/admin/devices/<int:device_id>/deactivate", methods=["POST"])
+@login_required
+@require_permission("deactivate_device")
+def admin_deactivate_device(device_id):
+    """Desativa um dispositivo (remove da viagem e marca como inativo)."""
+    conn = db()
+    cur  = conn.cursor()
+    cur.execute("""
+        UPDATE devices SET status = 'inactive', registration_status = 'inactive'
+        WHERE device_id = %s
+    """, (device_id,))
+    # Remove device da viagem ativa
+    cur.execute(
+        "UPDATE trips SET device_id = NULL WHERE device_id = %s AND end_time IS NULL",
+        (device_id,)
+    )
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    audit("device_deactivated", target_table="devices", target_id=device_id,
+          user_id=current_user.id, ip=request.remote_addr)
+    return jsonify({"message": "Dispositivo desativado"}), 200
+
+
+# -------------------------------------------------------
+# Rotas Admin — Gestão de Viagens
+# -------------------------------------------------------
+@app.route("/api/admin/trips", methods=["GET"])
+@login_required
+@require_permission("manage_trips")
+def admin_trips():
+    """Lista todas as viagens com status de atribuição."""
+    conn = db()
+    cur  = conn.cursor(dictionary=True)
+    cur.execute("""
+        SELECT t.trip_id, t.start_time, t.end_time, t.origin, t.destination,
+               b.batch_code, v.name AS vaccine_name,
+               v.min_temp, v.max_temp,
+               d.serial_number AS device_serial,
+               d.name AS device_name,
+               d.registration_status
+        FROM trips t
+        JOIN vaccine_batch b ON t.batch_id = b.batch_id
+        JOIN vaccines v ON b.vaccine_id = v.vaccine_id
+        LEFT JOIN devices d ON t.device_id = d.device_id
+        ORDER BY t.start_time DESC
+    """)
+    data = cur.fetchall()
+    cur.close()
+    conn.close()
+    return jsonify(data)
+
+
+@app.route("/api/admin/trips", methods=["POST"])
+@login_required
+@require_permission("create_trip")
+def admin_create_trip():
+    """Cria nova viagem (sem device — será atribuído no registro do dispositivo)."""
+    body        = request.get_json(force=True)
+    batch_id    = body.get("batch_id")
+    origin      = body.get("origin", "").strip()
+    destination = body.get("destination", "").strip()
+
+    if not all([batch_id, origin, destination]):
+        return jsonify({"error": "batch_id, origin e destination são obrigatórios"}), 400
+
+    conn = db()
+    cur  = conn.cursor()
+    cur.execute("""
+        INSERT INTO trips (batch_id, device_id, start_time, origin, destination)
+        VALUES (%s, NULL, NOW(), %s, %s)
+    """, (batch_id, origin, destination))
+    conn.commit()
+    trip_id = cur.lastrowid
+    cur.close()
+    conn.close()
+
+    audit("trip_created", target_table="trips", target_id=trip_id,
+          user_id=current_user.id, ip=request.remote_addr,
+          details={"batch_id": batch_id, "origin": origin, "destination": destination})
+    return jsonify({"message": "Viagem criada", "trip_id": trip_id}), 201
+
+
+@app.route("/api/admin/trips/<int:trip_id>/close", methods=["POST"])
+@login_required
+@require_permission("close_trip")
+def admin_close_trip(trip_id):
+    """Encerra uma viagem em andamento."""
+    conn = db()
+    cur  = conn.cursor()
+    cur.execute(
+        "UPDATE trips SET end_time = NOW(), received_confirmation = TRUE WHERE trip_id = %s AND end_time IS NULL",
+        (trip_id,)
+    )
+    conn.commit()
+    affected = cur.rowcount
+    cur.close()
+    conn.close()
+
+    if affected == 0:
+        return jsonify({"error": "Viagem não encontrada ou já encerrada"}), 404
+
+    audit("trip_closed", target_table="trips", target_id=trip_id,
+          user_id=current_user.id, ip=request.remote_addr)
+    return jsonify({"message": "Viagem encerrada"}), 200
+
+
+@app.route("/api/admin/batches")
+@login_required
+@require_permission("create_trip")
+def admin_batches():
+    """Lista lotes disponíveis para criação de viagens."""
+    conn = db()
+    cur  = conn.cursor(dictionary=True)
+    cur.execute("""
+        SELECT b.batch_id, b.batch_code, b.expiration_date, b.quantity_units,
+               v.name AS vaccine_name, v.min_temp, v.max_temp
+        FROM vaccine_batch b
+        JOIN vaccines v ON b.vaccine_id = v.vaccine_id
+        ORDER BY v.name, b.batch_code
     """)
     data = cur.fetchall()
     cur.close()

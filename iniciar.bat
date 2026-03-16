@@ -45,7 +45,7 @@ echo.
 echo [3/3] Iniciando Flask...
 taskkill /F /IM python.exe >nul 2>&1
 timeout /t 1 /nobreak >nul
-start "" /B "C:\Users\guilh\Desktop\vaccine-transport-iot\source\venv\Scripts\python.exe" "C:\Users\guilh\Desktop\vaccine-transport-iot\source\app\app.py"
+start "" /B /D "C:\Users\guilh\Desktop\vaccine-transport-iot\source\app" "C:\Users\guilh\Desktop\vaccine-transport-iot\source\venv\Scripts\python.exe" "C:\Users\guilh\Desktop\vaccine-transport-iot\source\app\app.py"
 timeout /t 5 /nobreak >nul
 
 netstat -an | find ":5000" | find "LISTENING" >nul

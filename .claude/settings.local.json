@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "allow"
+      "Edit",
+      "Write",
+      "Bash(npm run test:*)"
     ]
   }
 }

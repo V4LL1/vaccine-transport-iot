@@ -275,6 +275,73 @@ select:focus { border-color: var(--accent); }
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+/* ── Admin panel ──────────────────────────────────────────── */
+#adminPanel { display: none; }
+.section-title {
+  font-size: .9rem; font-weight: 700; color: var(--text);
+  margin: 20px 0 12px; display: flex; align-items: center; gap: 8px;
+}
+.section-title .stag {
+  font-size: .68rem; padding: 2px 8px; border-radius: 10px;
+  background: rgba(245,158,11,.15); color: #f59e0b;
+  border: 1px solid rgba(245,158,11,.2); font-weight: 600;
+}
+.admin-table { width:100%; border-collapse:collapse; }
+.admin-table th {
+  text-align:left; font-size:.68rem; font-weight:700;
+  text-transform:uppercase; letter-spacing:.06em;
+  color:var(--muted); padding:0 10px 10px; border-bottom:1px solid var(--border);
+}
+.admin-table td {
+  padding:10px; font-size:.8rem; color:var(--text);
+  border-bottom:1px solid var(--border); vertical-align:middle;
+}
+.admin-table tr:last-child td { border:none; }
+.admin-table tr:hover td { background:var(--surface2); }
+.btn {
+  display:inline-flex; align-items:center; gap:5px;
+  padding:6px 14px; border-radius:7px; font-size:.78rem;
+  font-weight:600; cursor:pointer; border:none; transition:all .15s;
+}
+.btn-primary { background:var(--accent); color:#fff; }
+.btn-primary:hover { background:#0284c7; }
+.btn-success { background:rgba(34,197,94,.15); color:#4ade80; border:1px solid rgba(34,197,94,.25); }
+.btn-success:hover { background:rgba(34,197,94,.25); }
+.btn-danger  { background:rgba(239,68,68,.15); color:#f87171; border:1px solid rgba(239,68,68,.25); }
+.btn-danger:hover  { background:rgba(239,68,68,.25); }
+.btn-ghost  { background:transparent; color:var(--muted); border:1px solid var(--border); }
+.btn-ghost:hover { border-color:var(--accent); color:var(--accent); }
+.pending-card {
+  display:flex; align-items:center; justify-content:space-between;
+  background:rgba(245,158,11,.06); border:1px solid rgba(245,158,11,.2);
+  border-radius:8px; padding:12px 16px; margin-bottom:8px;
+}
+.pending-card .serial { font-weight:700; color:var(--text); font-size:.85rem; }
+.pending-card .meta   { font-size:.72rem; color:var(--muted); margin-top:2px; }
+
+/* ── Modal ────────────────────────────────────────────────── */
+.modal-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,.7);
+  display:flex; align-items:center; justify-content:center;
+  z-index:1000;
+}
+.modal {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:14px; padding:28px; width:440px; max-width:95vw;
+}
+.modal h3 { font-size:1rem; font-weight:700; margin-bottom:18px; display:flex; align-items:center; gap:8px; }
+.form-group { margin-bottom:14px; }
+.form-group label { display:block; font-size:.78rem; color:var(--muted); margin-bottom:5px; font-weight:600; }
+.form-group input, .form-group select {
+  width:100%; background:var(--surface2); border:1px solid var(--border);
+  border-radius:8px; padding:9px 12px; color:var(--text);
+  font-size:.84rem; outline:none;
+}
+.form-group input:focus, .form-group select:focus { border-color:var(--accent); }
+.modal-footer { display:flex; gap:8px; justify-content:flex-end; margin-top:20px; }
+.badge-pending { background:rgba(245,158,11,.15); color:#fbbf24; border:1px solid rgba(245,158,11,.2); }
+.badge-admin   { background:rgba(99,102,241,.15); color:#a5b4fc; border:1px solid rgba(99,102,241,.2); }
 </style>
 </head>
 <body>
@@ -299,20 +366,36 @@ select:focus { border-color: var(--accent); }
     </a>
 
     <div class="nav-label" style="margin-top:8px">Sistema</div>
-    <a class="nav-item" href="/api/audit" target="_blank">
-      <span class="ni">📋</span> Audit Log
-    </a>
     <a class="nav-item" href="/api/status" target="_blank">
       <span class="ni">⚙️</span> Status API
     </a>
+    {% if user_role == 'admin' %}
+    <div class="nav-label" style="margin-top:8px">Administração</div>
+    <a class="nav-item" href="#adminPanel" onclick="showAdminPanel()">
+      <span class="ni">🔌</span> Dispositivos
+      <span id="pendingBadge" style="margin-left:auto;background:#f59e0b;color:#000;border-radius:10px;padding:1px 7px;font-size:.65rem;font-weight:700;display:none">0</span>
+    </a>
+    <a class="nav-item" href="#adminPanel" onclick="showAdminPanel()">
+      <span class="ni">🚚</span> Viagens
+    </a>
+    <a class="nav-item" href="/api/audit" target="_blank">
+      <span class="ni">📋</span> Audit Log
+    </a>
+    {% endif %}
   </nav>
 
   <div class="sidebar-footer">
     <div class="user-row">
-      <div class="user-avatar" id="userAvatar">A</div>
+      <div class="user-avatar">{{ user_name[0]|upper }}</div>
       <div class="user-info">
-        <div class="user-name" id="userName">Usuário</div>
-        <div class="user-role" id="userRole">—</div>
+        <div class="user-name">{{ user_name }}</div>
+        <div class="user-role">
+          {% if user_role == 'admin' %}
+            <span style="color:#f59e0b;font-weight:700">● Admin</span>
+          {% else %}
+            <span style="color:#64748b">● Operador</span>
+          {% endif %}
+        </div>
       </div>
     </div>
     <a href="/logout" class="logout-btn">
@@ -456,6 +539,94 @@ select:focus { border-color: var(--accent); }
       </div>
     </div>
 
+    {% if user_role == 'admin' %}
+    <!-- ── ADMIN PANEL ───────────────────────────────────────── -->
+    <div id="adminPanel">
+
+      <div class="section-title">
+        🔌 Dispositivos Descobertos <span class="stag">ADMIN</span>
+      </div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header">
+          <h3><span class="ci">📡</span> Aguardando Registro</h3>
+          <span id="pendingCountLabel" style="font-size:.75rem;color:var(--muted)">Carregando...</span>
+        </div>
+        <div class="card-body" id="pendingDeviceList">
+          <span style="color:var(--muted);font-size:.82rem">Nenhum dispositivo pendente.</span>
+        </div>
+      </div>
+
+      <div class="section-title">
+        🚚 Gestão de Viagens <span class="stag">ADMIN</span>
+      </div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header">
+          <h3><span class="ci">📋</span> Viagens Cadastradas</h3>
+          <button class="btn btn-primary" onclick="showNewTripModal()">+ Nova Viagem</button>
+        </div>
+        <div class="card-body" style="padding:0 18px 16px;overflow-x:auto">
+          <table class="admin-table" id="adminTripsTable">
+            <thead>
+              <tr>
+                <th>#</th><th>Lote / Vacina</th><th>Rota</th>
+                <th>Dispositivo</th><th>Status</th><th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="adminTripsBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /adminPanel -->
+
+    <!-- Modal: Registrar Dispositivo -->
+    <div class="modal-overlay" id="modalRegister" style="display:none">
+      <div class="modal">
+        <h3>🔌 Registrar Dispositivo</h3>
+        <input type="hidden" id="regDeviceId">
+        <div class="form-group">
+          <label>ID do dispositivo (auto-descoberto)</label>
+          <input type="text" id="regDeviceSerial" disabled style="opacity:.6">
+        </div>
+        <div class="form-group">
+          <label>Nome amigável *</label>
+          <input type="text" id="regDeviceName" placeholder="Ex: ESP32 Caminhão #1">
+        </div>
+        <div class="form-group">
+          <label>Atribuir à viagem *</label>
+          <select id="regTripSelect"></select>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-ghost" onclick="closeModal('modalRegister')">Cancelar</button>
+          <button class="btn btn-success" onclick="confirmRegister()">✔ Registrar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Nova Viagem -->
+    <div class="modal-overlay" id="modalTrip" style="display:none">
+      <div class="modal">
+        <h3>🚚 Nova Viagem</h3>
+        <div class="form-group">
+          <label>Lote de vacina *</label>
+          <select id="tripBatchSelect"></select>
+        </div>
+        <div class="form-group">
+          <label>Origem *</label>
+          <input type="text" id="tripOrigin" placeholder="Ex: Aeroporto Guarulhos">
+        </div>
+        <div class="form-group">
+          <label>Destino *</label>
+          <input type="text" id="tripDestination" placeholder="Ex: Hospital das Clínicas">
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-ghost" onclick="closeModal('modalTrip')">Cancelar</button>
+          <button class="btn btn-primary" onclick="confirmNewTrip()">✔ Criar Viagem</button>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
   </div><!-- /content -->
 </div><!-- /main -->
 
@@ -557,25 +728,210 @@ async function refreshDevices() {
     try {
         const devs = await fetchJSON("/api/devices");
         const el   = document.getElementById("deviceList");
-        const online = devs.filter(d => d.connectivity === 'online').length;
-        document.getElementById("statDevices").textContent = online + "/" + devs.length;
+        const active = devs.filter(d => d.registration_status === 'active');
+        const pending = devs.filter(d => d.registration_status === 'pending');
+        const online = active.filter(d => d.connectivity === 'online').length;
+        document.getElementById("statDevices").textContent = online + "/" + active.length;
+
+        // Badge de pendentes no nav
+        const pb = document.getElementById("pendingBadge");
+        if (pb) {
+            pb.textContent = pending.length;
+            pb.style.display = pending.length > 0 ? "inline" : "none";
+        }
 
         el.innerHTML = "";
-        devs.forEach(d => {
-            const clsMap = { online:"badge-green", recent:"badge-yellow", offline:"badge-red", never:"badge-gray" };
-            const labelMap = { online:"Online", recent:"Recente", offline:"Offline", never:"Nunca visto" };
+        const clsMap   = { online:"badge-green", recent:"badge-yellow", offline:"badge-red", never:"badge-gray" };
+        const labelMap = { online:"Online", recent:"Recente", offline:"Offline", never:"Nunca visto" };
+
+        // Pendentes primeiro (só visível para admin)
+        pending.forEach(d => {
             const div = document.createElement("div");
             div.className = "device-card";
             div.innerHTML = `
-                <div>
-                  <div class="device-name">${d.serial_number}</div>
-                  <div class="device-time">Último sinal: ${d.last_seen ? d.last_seen : '—'}</div>
+              <div>
+                <div class="device-name" style="color:#fbbf24">${d.serial_number}</div>
+                <div class="device-time">Descoberto — aguardando registro</div>
+              </div>
+              <span class="badge badge-pending">Pendente</span>`;
+            el.appendChild(div);
+        });
+
+        active.forEach(d => {
+            const div = document.createElement("div");
+            div.className = "device-card";
+            const trip = d.active_trip_id ? `Viagem #${d.active_trip_id}` : "Sem viagem ativa";
+            div.innerHTML = `
+              <div>
+                <div class="device-name">${d.name || d.serial_number}</div>
+                <div class="device-time">${trip} · Sinal: ${d.last_seen ? d.last_seen.slice(11,19) : '—'}</div>
+              </div>
+              <span class="badge ${clsMap[d.connectivity]||'badge-gray'}">${labelMap[d.connectivity]||d.connectivity}</span>`;
+            el.appendChild(div);
+        });
+
+        if (devs.length === 0) el.innerHTML = `<span style="color:var(--muted);font-size:.82rem">Nenhum dispositivo encontrado.</span>`;
+    } catch(e) {}
+}
+
+// ---- Admin: Painel ----
+function showAdminPanel() {
+    const panel = document.getElementById("adminPanel");
+    if (panel) { panel.style.display = "block"; panel.scrollIntoView({behavior:"smooth"}); }
+    refreshAdminPending();
+    refreshAdminTrips();
+}
+
+// ---- Admin: Dispositivos pendentes ----
+async function refreshAdminPending() {
+    try {
+        const devs = await fetchJSON("/api/admin/devices/pending");
+        const el = document.getElementById("pendingDeviceList");
+        const label = document.getElementById("pendingCountLabel");
+        if (!el) return;
+        label.textContent = devs.length + " dispositivo(s) aguardando registro";
+
+        if (devs.length === 0) {
+            el.innerHTML = `<span style="color:var(--muted);font-size:.82rem">Nenhum dispositivo descoberto aguardando registro.</span>`;
+            return;
+        }
+        el.innerHTML = "";
+        devs.forEach(d => {
+            const clsMap   = { online:"badge-green", recent:"badge-yellow", offline:"badge-red", never:"badge-gray" };
+            const labelMap = { online:"Online", recent:"Recente", offline:"Offline", never:"Nunca visto" };
+            const div = document.createElement("div");
+            div.className = "pending-card";
+            div.innerHTML = `
+              <div>
+                <div class="serial">📟 ${d.serial_number}</div>
+                <div class="meta">Último sinal: ${d.last_seen || '—'} &nbsp;·&nbsp;
+                  <span class="badge ${clsMap[d.connectivity]||'badge-gray'}" style="font-size:.65rem">${labelMap[d.connectivity]||'—'}</span>
                 </div>
-                <span class="badge ${clsMap[d.connectivity] || 'badge-gray'}">${labelMap[d.connectivity] || d.connectivity}</span>`;
+              </div>
+              <button class="btn btn-success" onclick="openRegisterModal(${d.device_id}, '${d.serial_number}')">🔗 Registrar</button>`;
             el.appendChild(div);
         });
     } catch(e) {}
 }
+
+// ---- Admin: Viagens ----
+async function refreshAdminTrips() {
+    try {
+        const trips = await fetchJSON("/api/admin/trips");
+        const tbody = document.getElementById("adminTripsBody");
+        if (!tbody) return;
+        tbody.innerHTML = "";
+        trips.forEach(t => {
+            const status = t.end_time ? `<span class="badge badge-gray">Encerrada</span>` :
+                                        `<span class="badge badge-green">Em andamento</span>`;
+            const device = t.device_name || t.device_serial || `<span style="color:var(--warn)">Sem dispositivo</span>`;
+            const close = !t.end_time ? `<button class="btn btn-danger" onclick="closeTrip(${t.trip_id})" style="font-size:.72rem;padding:4px 10px">Encerrar</button>` : '';
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+              <td style="font-weight:700;color:var(--accent)">#${t.trip_id}</td>
+              <td>${t.vaccine_name}<br><span style="color:var(--muted);font-size:.72rem">${t.batch_code}</span></td>
+              <td style="font-size:.78rem">${t.origin} → ${t.destination}</td>
+              <td style="font-size:.78rem">${device}</td>
+              <td>${status}</td>
+              <td>${close}</td>`;
+            tbody.appendChild(tr);
+        });
+    } catch(e) {}
+}
+
+// ---- Admin: Abrir modal registro ----
+async function openRegisterModal(deviceId, serial) {
+    document.getElementById("regDeviceId").value = deviceId;
+    document.getElementById("regDeviceSerial").value = serial;
+    document.getElementById("regDeviceName").value = "";
+
+    // Carrega viagens sem dispositivo ou em andamento
+    const trips = await fetchJSON("/api/admin/trips");
+    const sel = document.getElementById("regTripSelect");
+    sel.innerHTML = "";
+    trips.filter(t => !t.end_time).forEach(t => {
+        const opt = document.createElement("option");
+        opt.value = t.trip_id;
+        opt.textContent = `#${t.trip_id} — ${t.vaccine_name} | ${t.origin} → ${t.destination}`;
+        sel.appendChild(opt);
+    });
+    if (sel.options.length === 0) {
+        sel.innerHTML = `<option disabled>Nenhuma viagem em andamento disponível</option>`;
+    }
+    document.getElementById("modalRegister").style.display = "flex";
+}
+
+async function confirmRegister() {
+    const deviceId = document.getElementById("regDeviceId").value;
+    const name     = document.getElementById("regDeviceName").value.trim();
+    const tripId   = document.getElementById("regTripSelect").value;
+
+    if (!name) { alert("Informe um nome para o dispositivo."); return; }
+    if (!tripId) { alert("Selecione uma viagem."); return; }
+
+    const res = await fetch(`/api/admin/devices/${deviceId}/register`, {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({ name, trip_id: parseInt(tripId) })
+    });
+    const data = await res.json();
+    if (res.ok) {
+        alert("✔ " + data.message);
+        closeModal("modalRegister");
+        refreshAdminPending();
+        refreshAdminTrips();
+        refreshDevices();
+        loadTrips();
+    } else {
+        alert("Erro: " + data.error);
+    }
+}
+
+// ---- Admin: Nova viagem ----
+async function showNewTripModal() {
+    const batches = await fetchJSON("/api/admin/batches");
+    const sel = document.getElementById("tripBatchSelect");
+    sel.innerHTML = "";
+    batches.forEach(b => {
+        const opt = document.createElement("option");
+        opt.value = b.batch_id;
+        opt.textContent = `${b.vaccine_name} — ${b.batch_code} (val: ${b.expiration_date})`;
+        sel.appendChild(opt);
+    });
+    document.getElementById("modalTrip").style.display = "flex";
+}
+
+async function confirmNewTrip() {
+    const batch_id    = document.getElementById("tripBatchSelect").value;
+    const origin      = document.getElementById("tripOrigin").value.trim();
+    const destination = document.getElementById("tripDestination").value.trim();
+    if (!origin || !destination) { alert("Preencha origem e destino."); return; }
+
+    const res = await fetch("/api/admin/trips", {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({ batch_id: parseInt(batch_id), origin, destination })
+    });
+    const data = await res.json();
+    if (res.ok) {
+        alert(`✔ Viagem #${data.trip_id} criada com sucesso!`);
+        closeModal("modalTrip");
+        refreshAdminTrips();
+        loadTrips();
+    } else {
+        alert("Erro: " + data.error);
+    }
+}
+
+async function closeTrip(tripId) {
+    if (!confirm(`Encerrar viagem #${tripId}?`)) return;
+    const res = await fetch(`/api/admin/trips/${tripId}/close`, { method:"POST" });
+    const data = await res.json();
+    if (res.ok) { alert("✔ " + data.message); refreshAdminTrips(); loadTrips(); }
+    else alert("Erro: " + data.error);
+}
+
+function closeModal(id) { document.getElementById(id).style.display = "none"; }
 
 // ---- Leituras recentes ----
 async function refreshRecent() {

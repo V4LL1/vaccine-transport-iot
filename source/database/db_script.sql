@@ -23,10 +23,15 @@ CREATE TABLE users (
 -- DEVICES TABLE
 -- ============================
 CREATE TABLE devices (
-    device_id INT AUTO_INCREMENT PRIMARY KEY,
-    serial_number VARCHAR(100) UNIQUE NOT NULL,
-    status ENUM('active','inactive') DEFAULT 'active',
-    last_seen DATETIME NULL
+    device_id           INT AUTO_INCREMENT PRIMARY KEY,
+    serial_number       VARCHAR(100) UNIQUE NOT NULL,
+    name                VARCHAR(100) NULL,              -- Nome amigável (definido pelo admin no registro)
+    status              ENUM('active','inactive') DEFAULT 'active',
+    registration_status ENUM('pending','active','inactive') NOT NULL DEFAULT 'pending',
+    registered_by       INT NULL,                       -- FK para users (quem registrou)
+    registered_at       DATETIME NULL,
+    last_seen           DATETIME NULL,
+    FOREIGN KEY (registered_by) REFERENCES users(user_id) ON DELETE SET NULL
 );
 
 -- ============================
@@ -58,7 +63,7 @@ CREATE TABLE vaccine_batch (
 CREATE TABLE trips (
     trip_id INT AUTO_INCREMENT PRIMARY KEY,
     batch_id INT NOT NULL,
-    device_id INT NOT NULL,
+    device_id INT NULL,   -- NULL até admin registrar o ESP32 na viagem
     start_time DATETIME NOT NULL,
     end_time DATETIME NULL,
     origin VARCHAR(200) NOT NULL,
@@ -147,14 +152,16 @@ INSERT INTO users (name, email, password_hash, role) VALUES
 ('Ana Costa',     'ana@monitoramento.com',  '$2b$12$I5vqwLXClQELkxIGGEQUOuqUMt4TKdR9W.8jGaqyK9TKNiJHPWIJa', 'operator');
 
 -- ============================
--- 2. POPULAR DISPOSITIVOS
+-- 2. POPULAR DISPOSITIVOS (seed — pré-registrados)
+-- Dispositivos reais são descobertos automaticamente via MQTT
+-- e registrados pelo admin pelo dashboard
 -- ============================
-INSERT INTO devices (serial_number, status) VALUES
-('IOT-GPS-001', 'active'),
-('IOT-GPS-002', 'active'),
-('IOT-GPS-003', 'inactive'), -- Um dispositivo em manutenção
-('IOT-GPS-004', 'active'),
-('IOT-TEMP-X99', 'active');
+INSERT INTO devices (serial_number, name, status, registration_status) VALUES
+('IOT-GPS-001',  'Caminhão Refrigerado #1', 'active',   'active'),
+('IOT-GPS-002',  'Caminhão Refrigerado #2', 'active',   'active'),
+('IOT-GPS-003',  'Sensor Ultracongelado',   'inactive', 'inactive'),
+('IOT-GPS-004',  'Carga Moderna SP',        'active',   'active'),
+('IOT-TEMP-X99', 'Sensor Externo Teste',    'active',   'active');
 
 -- ============================
 -- 3. POPULAR VACINAS (Tipos Reais)

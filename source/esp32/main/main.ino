@@ -28,9 +28,10 @@ const char* MQTT_PASS     = "Esp32Mqtt@2026";
 const char* HMAC_KEY      = "v@ccine-hmac-key-2026-xK9mP7qR!";
 // =========================================================
 
-// Identificação do dispositivo/viagem
-const char* DEVICE_ID   = "IOT-GPS-004";
-const int   TRIP_ID     = 3;
+// Device ID gerado automaticamente do endereço MAC (preenchido em setup())
+// Formato: ESP32-AABBCCDDEEFF  — único por hardware, sem hardcoding
+String DEVICE_ID_STR = "ESP32-UNKNOWN";
+const char* DEVICE_ID = nullptr;  // aponta para DEVICE_ID_STR.c_str() após setup()
 
 // Tópicos MQTT
 const char* TOPIC_READINGS  = "vaccines/readings";
@@ -186,9 +187,9 @@ void publishReading(float temp, float hum) {
   String ts = buildTimestamp();
 
   StaticJsonDocument<512> doc;
-  doc["device_id"]   = DEVICE_ID;
-  doc["trip_id"]     = TRIP_ID;
+  doc["device_id"]   = DEVICE_ID;  // MAC-based, sem hardcoding
   doc["timestamp"]   = ts;
+  // trip_id não é mais enviado — Flask resolve pelo registro do device
   doc["temperature"] = isnan(temp) ? (float)0.0 : temp;
   doc["humidity"]    = isnan(hum)  ? (float)0.0 : hum;
 
@@ -241,6 +242,15 @@ void setup() {
   SerialGPS.begin(GPS_BAUD, SERIAL_8N1, GPS_RX_PIN, GPS_TX_PIN);
 
   connectWiFi();
+
+  // Gerar device ID único a partir do MAC address
+  // Formato: ESP32-AABBCCDDEEFF — sem hardcoding, único por hardware
+  String mac = WiFi.macAddress();   // "AA:BB:CC:DD:EE:FF"
+  mac.replace(":", "");             // "AABBCCDDEEFF"
+  DEVICE_ID_STR = "ESP32-" + mac;
+  DEVICE_ID = DEVICE_ID_STR.c_str();
+  Serial.print("[Device] ID: ");
+  Serial.println(DEVICE_ID);
 
   // Configurar TLS com o certificado da CA
   wifiClientSecure.setCACert(CA_CERT);
