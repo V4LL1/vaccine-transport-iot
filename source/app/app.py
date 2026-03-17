@@ -841,4 +841,10 @@ def admin_batches():
 if __name__ == "__main__":
     t = threading.Thread(target=start_mqtt_subscriber, daemon=True)
     t.start()
-    app.run(debug=False, host="0.0.0.0", port=5000)
+    ssl_cert = os.path.join(os.path.dirname(__file__), "../../certs/flask.crt")
+    ssl_key  = os.path.join(os.path.dirname(__file__), "../../certs/flask.key")
+    if os.path.exists(ssl_cert) and os.path.exists(ssl_key):
+        app.run(debug=False, host="0.0.0.0", port=5000,
+                ssl_context=(ssl_cert, ssl_key))
+    else:
+        app.run(debug=False, host="0.0.0.0", port=5000)

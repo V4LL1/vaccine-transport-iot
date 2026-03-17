@@ -7412,3 +7412,348 @@
 1773695192: Sending PUBLISH to flask-subscriber (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
 1773695197: Received PUBLISH from ESP32-B0A732D765D0 (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
 1773695197: Sending PUBLISH to flask-subscriber (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1773695206: mosquitto version 2.0.22 starting
+1773695206: Config loaded from C:\Users\guilh\Desktop\vaccine-transport-iot\source\broker\mosquitto-tls.conf.
+1773695206: Opening ipv6 listen socket on port 8883.
+1773695206: Opening ipv4 listen socket on port 8883.
+1773695206: mosquitto version 2.0.22 running
+1773695206: New connection from 10.0.0.133:51850 on port 8883.
+1773695206: New client connected from 10.0.0.133:51850 as ESP32-B0A732D765D0 (p2, c1, k15, u'esp32-device').
+1773695206: No will message specified.
+1773695206: Sending CONNACK to ESP32-B0A732D765D0 (0, 0)
+1773695206: Received PUBLISH from ESP32-B0A732D765D0 (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1773695206: Received PUBLISH from ESP32-B0A732D765D0 (d0, q0, r0, m0, 'vaccines/heartbeat', ... (87 bytes))
+1773695210: New connection from 127.0.0.1:61447 on port 8883.
+1773695210: New client connected from 127.0.0.1:61447 as flask-subscriber (p2, c1, k60, u'flask-subscriber').
+1773695210: No will message specified.
+1773695210: Sending CONNACK to flask-subscriber (0, 0)
+1773695210: Received SUBSCRIBE from flask-subscriber
+1773695210: 	vaccines/readings (QoS 0)
+1773695210: flask-subscriber 0 vaccines/readings
+1773695210: Sending SUBACK to flask-subscriber
+1773695210: Received SUBSCRIBE from flask-subscriber
+1773695210: 	vaccines/heartbeat (QoS 0)
+1773695210: flask-subscriber 0 vaccines/heartbeat
+1773695210: Sending SUBACK to flask-subscriber
+1773695211: Received PUBLISH from ESP32-B0A732D765D0 (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1773695211: Sending PUBLISH to flask-subscriber (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1773695216: Received PUBLISH from ESP32-B0A732D765D0 (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1773695216: Sending PUBLISH to flask-subscriber (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1773695221: Received PUBLISH from ESP32-B0A732D765D0 (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1773695221: Sending PUBLISH to flask-subscriber (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1773695221: Received PINGREQ from ESP32-B0A732D765D0
+1773695221: Sending PINGRESP to ESP32-B0A732D765D0
+1773695226: Received PUBLISH from ESP32-B0A732D765D0 (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1773695226: Sending PUBLISH to flask-subscriber (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1773695231: Received PUBLISH from ESP32-B0A732D765D0 (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1773695231: Sending PUBLISH to flask-subscriber (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1773695236: Received PUBLISH from ESP32-B0A732D765D0 (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1773695236: Sending PUBLISH to flask-subscriber (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1773695236: Received PUBLISH from ESP32-B0A732D765D0 (d0, q0, r0, m0, 'vaccines/heartbeat', ... (87 bytes))
+1773695236: Sending PUBLISH to flask-subscriber (d0, q0, r0, m0, 'vaccines/heartbeat', ... (87 bytes))
+1773695236: Received PINGREQ from ESP32-B0A732D765D0
+1773695236: Sending PINGRESP to ESP32-B0A732D765D0
+1773695241: Received PUBLISH from ESP32-B0A732D765D0 (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1773695241: Sending PUBLISH to flask-subscriber (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1773695246: Received PUBLISH from ESP32-B0A732D765D0 (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1773695246: Sending PUBLISH to flask-subscriber (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1773695251: Received PUBLISH from ESP32-B0A732D765D0 (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1773695251: Sending PUBLISH to flask-subscriber (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1773695251: Received PINGREQ from ESP32-B0A732D765D0
+1773695251: Sending PINGRESP to ESP32-B0A732D765D0
+1773695256: Received PUBLISH from ESP32-B0A732D765D0 (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1773695256: Sending PUBLISH to flask-subscriber (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1773695261: Received PUBLISH from ESP32-B0A732D765D0 (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1773695261: Sending PUBLISH to flask-subscriber (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1773695266: Received PUBLISH from ESP32-B0A732D765D0 (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1773695266: Sending PUBLISH to flask-subscriber (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1773695266: Received PUBLISH from ESP32-B0A732D765D0 (d0, q0, r0, m0, 'vaccines/heartbeat', ... (87 bytes))
+1773695266: Sending PUBLISH to flask-subscriber (d0, q0, r0, m0, 'vaccines/heartbeat', ... (87 bytes))
+1773695266: Received PINGREQ from ESP32-B0A732D765D0
+1773695266: Sending PINGRESP to ESP32-B0A732D765D0
+1773695270: Received PINGREQ from flask-subscriber
+1773695270: Sending PINGRESP to flask-subscriber
+1773695271: Received PUBLISH from ESP32-B0A732D765D0 (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1773695271: Sending PUBLISH to flask-subscriber (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1773695276: Received PUBLISH from ESP32-B0A732D765D0 (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1773695276: Sending PUBLISH to flask-subscriber (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1773695281: Received PUBLISH from ESP32-B0A732D765D0 (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1773695281: Sending PUBLISH to flask-subscriber (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1773695281: Received PINGREQ from ESP32-B0A732D765D0
+1773695281: Sending PINGRESP to ESP32-B0A732D765D0
+1773695286: Received PUBLISH from ESP32-B0A732D765D0 (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1773695286: Sending PUBLISH to flask-subscriber (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1773695309: Client ESP32-B0A732D765D0 has exceeded timeout, disconnecting.
+1773695331: Received PINGREQ from flask-subscriber
+1773695331: Sending PINGRESP to flask-subscriber
+1773695391: Received PINGREQ from flask-subscriber
+1773695391: Sending PINGRESP to flask-subscriber
+1773695451: Received PINGREQ from flask-subscriber
+1773695451: Sending PINGRESP to flask-subscriber
+1773695511: Received PINGREQ from flask-subscriber
+1773695511: Sending PINGRESP to flask-subscriber
+1773695572: Received PINGREQ from flask-subscriber
+1773695572: Sending PINGRESP to flask-subscriber
+1773695632: Received PINGREQ from flask-subscriber
+1773695632: Sending PINGRESP to flask-subscriber
+1773695692: Received PINGREQ from flask-subscriber
+1773695692: Sending PINGRESP to flask-subscriber
+1773695753: Received PINGREQ from flask-subscriber
+1773695753: Sending PINGRESP to flask-subscriber
+1773695813: Received PINGREQ from flask-subscriber
+1773695813: Sending PINGRESP to flask-subscriber
+1773695873: Received PINGREQ from flask-subscriber
+1773695873: Sending PINGRESP to flask-subscriber
+1773695934: Received PINGREQ from flask-subscriber
+1773695934: Sending PINGRESP to flask-subscriber
+1773695994: Received PINGREQ from flask-subscriber
+1773695994: Sending PINGRESP to flask-subscriber
+1773696054: Received PINGREQ from flask-subscriber
+1773696054: Sending PINGRESP to flask-subscriber
+1773696115: Received PINGREQ from flask-subscriber
+1773696115: Sending PINGRESP to flask-subscriber
+1773696176: Received PINGREQ from flask-subscriber
+1773696176: Sending PINGRESP to flask-subscriber
+1773696236: Received PINGREQ from flask-subscriber
+1773696236: Sending PINGRESP to flask-subscriber
+1773696297: Received PINGREQ from flask-subscriber
+1773696297: Sending PINGRESP to flask-subscriber
+1773696357: Received PINGREQ from flask-subscriber
+1773696357: Sending PINGRESP to flask-subscriber
+1773696417: Received PINGREQ from flask-subscriber
+1773696417: Sending PINGRESP to flask-subscriber
+1773696478: Received PINGREQ from flask-subscriber
+1773696478: Sending PINGRESP to flask-subscriber
+1773696539: Received PINGREQ from flask-subscriber
+1773696539: Sending PINGRESP to flask-subscriber
+1773696599: Received PINGREQ from flask-subscriber
+1773696599: Sending PINGRESP to flask-subscriber
+1773696659: Received PINGREQ from flask-subscriber
+1773696659: Sending PINGRESP to flask-subscriber
+1773696720: Received PINGREQ from flask-subscriber
+1773696720: Sending PINGRESP to flask-subscriber
+1773696781: Received PINGREQ from flask-subscriber
+1773696781: Sending PINGRESP to flask-subscriber
+1773696841: Received PINGREQ from flask-subscriber
+1773696841: Sending PINGRESP to flask-subscriber
+1773696902: Received PINGREQ from flask-subscriber
+1773696902: Sending PINGRESP to flask-subscriber
+1773696962: Received PINGREQ from flask-subscriber
+1773696962: Sending PINGRESP to flask-subscriber
+1773697023: Received PINGREQ from flask-subscriber
+1773697023: Sending PINGRESP to flask-subscriber
+1773697083: Received PINGREQ from flask-subscriber
+1773697083: Sending PINGRESP to flask-subscriber
+1773697144: Received PINGREQ from flask-subscriber
+1773697144: Sending PINGRESP to flask-subscriber
+1773697204: Received PINGREQ from flask-subscriber
+1773697204: Sending PINGRESP to flask-subscriber
+1773697264: Received PINGREQ from flask-subscriber
+1773697264: Sending PINGRESP to flask-subscriber
+1773697325: Received PINGREQ from flask-subscriber
+1773697325: Sending PINGRESP to flask-subscriber
+1773697386: Received PINGREQ from flask-subscriber
+1773697386: Sending PINGRESP to flask-subscriber
+1773697446: Received PINGREQ from flask-subscriber
+1773697446: Sending PINGRESP to flask-subscriber
+1773697506: Received PINGREQ from flask-subscriber
+1773697506: Sending PINGRESP to flask-subscriber
+1773697567: Received PINGREQ from flask-subscriber
+1773697567: Sending PINGRESP to flask-subscriber
+1773697628: Received PINGREQ from flask-subscriber
+1773697628: Sending PINGRESP to flask-subscriber
+1773697688: Received PINGREQ from flask-subscriber
+1773697688: Sending PINGRESP to flask-subscriber
+1773697749: Received PINGREQ from flask-subscriber
+1773697749: Sending PINGRESP to flask-subscriber
+1773697809: Received PINGREQ from flask-subscriber
+1773697809: Sending PINGRESP to flask-subscriber
+1773697869: Received PINGREQ from flask-subscriber
+1773697869: Sending PINGRESP to flask-subscriber
+1773697930: Received PINGREQ from flask-subscriber
+1773697930: Sending PINGRESP to flask-subscriber
+1773697990: Received PINGREQ from flask-subscriber
+1773697990: Sending PINGRESP to flask-subscriber
+1773698051: Received PINGREQ from flask-subscriber
+1773698051: Sending PINGRESP to flask-subscriber
+1773698111: Received PINGREQ from flask-subscriber
+1773698111: Sending PINGRESP to flask-subscriber
+1773698172: Received PINGREQ from flask-subscriber
+1773698172: Sending PINGRESP to flask-subscriber
+1773698232: Received PINGREQ from flask-subscriber
+1773698232: Sending PINGRESP to flask-subscriber
+1773698293: Received PINGREQ from flask-subscriber
+1773698293: Sending PINGRESP to flask-subscriber
+1773698353: Received PINGREQ from flask-subscriber
+1773698353: Sending PINGRESP to flask-subscriber
+1773698414: Received PINGREQ from flask-subscriber
+1773698414: Sending PINGRESP to flask-subscriber
+1773698474: Received PINGREQ from flask-subscriber
+1773698474: Sending PINGRESP to flask-subscriber
+1773698535: Received PINGREQ from flask-subscriber
+1773698535: Sending PINGRESP to flask-subscriber
+1773698595: Received PINGREQ from flask-subscriber
+1773698595: Sending PINGRESP to flask-subscriber
+1773698656: Received PINGREQ from flask-subscriber
+1773698656: Sending PINGRESP to flask-subscriber
+1773698716: Received PINGREQ from flask-subscriber
+1773698716: Sending PINGRESP to flask-subscriber
+1773698777: Received PINGREQ from flask-subscriber
+1773698777: Sending PINGRESP to flask-subscriber
+1773698838: Received PINGREQ from flask-subscriber
+1773698838: Sending PINGRESP to flask-subscriber
+1773698898: Received PINGREQ from flask-subscriber
+1773698898: Sending PINGRESP to flask-subscriber
+1773698959: Received PINGREQ from flask-subscriber
+1773698959: Sending PINGRESP to flask-subscriber
+1773699019: Received PINGREQ from flask-subscriber
+1773699019: Sending PINGRESP to flask-subscriber
+1773699080: Received PINGREQ from flask-subscriber
+1773699080: Sending PINGRESP to flask-subscriber
+1773699140: Received PINGREQ from flask-subscriber
+1773699140: Sending PINGRESP to flask-subscriber
+1773699201: Received PINGREQ from flask-subscriber
+1773699201: Sending PINGRESP to flask-subscriber
+1773699261: Received PINGREQ from flask-subscriber
+1773699261: Sending PINGRESP to flask-subscriber
+1773699322: Received PINGREQ from flask-subscriber
+1773699322: Sending PINGRESP to flask-subscriber
+1773699382: Received PINGREQ from flask-subscriber
+1773699382: Sending PINGRESP to flask-subscriber
+1773699443: Received PINGREQ from flask-subscriber
+1773699443: Sending PINGRESP to flask-subscriber
+1773699503: Received PINGREQ from flask-subscriber
+1773699503: Sending PINGRESP to flask-subscriber
+1773699564: Received PINGREQ from flask-subscriber
+1773699564: Sending PINGRESP to flask-subscriber
+1773699624: Received PINGREQ from flask-subscriber
+1773699624: Sending PINGRESP to flask-subscriber
+1773699685: Received PINGREQ from flask-subscriber
+1773699685: Sending PINGRESP to flask-subscriber
+1773699745: Received PINGREQ from flask-subscriber
+1773699745: Sending PINGRESP to flask-subscriber
+1773699806: Received PINGREQ from flask-subscriber
+1773699806: Sending PINGRESP to flask-subscriber
+1773699866: Received PINGREQ from flask-subscriber
+1773699866: Sending PINGRESP to flask-subscriber
+1773699927: Received PINGREQ from flask-subscriber
+1773699927: Sending PINGRESP to flask-subscriber
+1773699987: Received PINGREQ from flask-subscriber
+1773699987: Sending PINGRESP to flask-subscriber
+1773700048: Received PINGREQ from flask-subscriber
+1773700048: Sending PINGRESP to flask-subscriber
+1773700108: Received PINGREQ from flask-subscriber
+1773700108: Sending PINGRESP to flask-subscriber
+1773700168: Received PINGREQ from flask-subscriber
+1773700168: Sending PINGRESP to flask-subscriber
+1773700229: Received PINGREQ from flask-subscriber
+1773700229: Sending PINGRESP to flask-subscriber
+1773700289: Received PINGREQ from flask-subscriber
+1773700289: Sending PINGRESP to flask-subscriber
+1773700350: Received PINGREQ from flask-subscriber
+1773700350: Sending PINGRESP to flask-subscriber
+1773700410: Received PINGREQ from flask-subscriber
+1773700410: Sending PINGRESP to flask-subscriber
+1773700464: Client flask-subscriber closed its connection.
+1773749489: mosquitto version 2.0.22 starting
+1773749489: Config loaded from C:\Users\guilh\Desktop\vaccine-transport-iot\source\broker\mosquitto-tls.conf.
+1773749489: Opening ipv6 listen socket on port 8883.
+1773749489: Opening ipv4 listen socket on port 8883.
+1773749489: mosquitto version 2.0.22 running
+1773749494: New connection from 127.0.0.1:60118 on port 8883.
+1773749494: New client connected from 127.0.0.1:60118 as flask-subscriber (p2, c1, k60, u'flask-subscriber').
+1773749494: No will message specified.
+1773749494: Sending CONNACK to flask-subscriber (0, 0)
+1773749494: Received SUBSCRIBE from flask-subscriber
+1773749494: 	vaccines/readings (QoS 0)
+1773749494: flask-subscriber 0 vaccines/readings
+1773749494: Sending SUBACK to flask-subscriber
+1773749494: Received SUBSCRIBE from flask-subscriber
+1773749494: 	vaccines/heartbeat (QoS 0)
+1773749494: flask-subscriber 0 vaccines/heartbeat
+1773749494: Sending SUBACK to flask-subscriber
+1773749554: Received PINGREQ from flask-subscriber
+1773749554: Sending PINGRESP to flask-subscriber
+1773749614: Received PINGREQ from flask-subscriber
+1773749614: Sending PINGRESP to flask-subscriber
+1773749675: Received PINGREQ from flask-subscriber
+1773749675: Sending PINGRESP to flask-subscriber
+1773749735: Received PINGREQ from flask-subscriber
+1773749735: Sending PINGRESP to flask-subscriber
+1773749795: Received PINGREQ from flask-subscriber
+1773749795: Sending PINGRESP to flask-subscriber
+1773749856: Received PINGREQ from flask-subscriber
+1773749856: Sending PINGRESP to flask-subscriber
+1773749916: Received PINGREQ from flask-subscriber
+1773749916: Sending PINGRESP to flask-subscriber
+1773749976: Received PINGREQ from flask-subscriber
+1773749976: Sending PINGRESP to flask-subscriber
+1773750037: Received PINGREQ from flask-subscriber
+1773750037: Sending PINGRESP to flask-subscriber
+1773750097: Received PINGREQ from flask-subscriber
+1773750097: Sending PINGRESP to flask-subscriber
+1773750157: Received PINGREQ from flask-subscriber
+1773750157: Sending PINGRESP to flask-subscriber
+1773750217: Received PINGREQ from flask-subscriber
+1773750217: Sending PINGRESP to flask-subscriber
+1773750248: Client flask-subscriber closed its connection.
+1773750274: mosquitto version 2.0.22 starting
+1773750274: Config loaded from C:\Users\guilh\Desktop\vaccine-transport-iot\source\broker\mosquitto-tls.conf.
+1773750274: Opening ipv6 listen socket on port 8883.
+1773750274: Opening ipv4 listen socket on port 8883.
+1773750274: mosquitto version 2.0.22 running
+1773750278: New connection from 127.0.0.1:50351 on port 8883.
+1773750278: New client connected from 127.0.0.1:50351 as flask-subscriber (p2, c1, k60, u'flask-subscriber').
+1773750278: No will message specified.
+1773750278: Sending CONNACK to flask-subscriber (0, 0)
+1773750278: Received SUBSCRIBE from flask-subscriber
+1773750278: 	vaccines/readings (QoS 0)
+1773750278: flask-subscriber 0 vaccines/readings
+1773750278: Sending SUBACK to flask-subscriber
+1773750278: Received SUBSCRIBE from flask-subscriber
+1773750278: 	vaccines/heartbeat (QoS 0)
+1773750278: flask-subscriber 0 vaccines/heartbeat
+1773750278: Sending SUBACK to flask-subscriber
+1773750339: Received PINGREQ from flask-subscriber
+1773750339: Sending PINGRESP to flask-subscriber
+1773750382: Client flask-subscriber closed its connection.
+1773750399: mosquitto version 2.0.22 starting
+1773750399: Config loaded from C:\Users\guilh\Desktop\vaccine-transport-iot\source\broker\mosquitto-tls.conf.
+1773750399: Opening ipv6 listen socket on port 8883.
+1773750399: Opening ipv4 listen socket on port 8883.
+1773750399: mosquitto version 2.0.22 running
+1773750403: New connection from 127.0.0.1:60690 on port 8883.
+1773750403: New client connected from 127.0.0.1:60690 as flask-subscriber (p2, c1, k60, u'flask-subscriber').
+1773750403: No will message specified.
+1773750403: Sending CONNACK to flask-subscriber (0, 0)
+1773750403: Received SUBSCRIBE from flask-subscriber
+1773750403: 	vaccines/readings (QoS 0)
+1773750403: flask-subscriber 0 vaccines/readings
+1773750403: Sending SUBACK to flask-subscriber
+1773750403: Received SUBSCRIBE from flask-subscriber
+1773750403: 	vaccines/heartbeat (QoS 0)
+1773750403: flask-subscriber 0 vaccines/heartbeat
+1773750403: Sending SUBACK to flask-subscriber
+1773750463: Received PINGREQ from flask-subscriber
+1773750463: Sending PINGRESP to flask-subscriber
+1773750524: Received PINGREQ from flask-subscriber
+1773750524: Sending PINGRESP to flask-subscriber
+1773750584: Received PINGREQ from flask-subscriber
+1773750584: Sending PINGRESP to flask-subscriber
+1773750645: Received PINGREQ from flask-subscriber
+1773750645: Sending PINGRESP to flask-subscriber
+1773750695: New connection from 10.0.0.133:50627 on port 8883.
+1773750695: New client connected from 10.0.0.133:50627 as ESP32-B0A732D765D0 (p2, c1, k15, u'esp32-device').
+1773750695: No will message specified.
+1773750695: Sending CONNACK to ESP32-B0A732D765D0 (0, 0)
+1773750697: Received PUBLISH from ESP32-B0A732D765D0 (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1773750697: Sending PUBLISH to flask-subscriber (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1773750702: Received PUBLISH from ESP32-B0A732D765D0 (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1773750702: Sending PUBLISH to flask-subscriber (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1773750705: Received PINGREQ from flask-subscriber
+1773750705: Sending PINGRESP to flask-subscriber
+1773750707: Received PUBLISH from ESP32-B0A732D765D0 (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1773750707: Sending PUBLISH to flask-subscriber (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1773750710: Received PINGREQ from ESP32-B0A732D765D0
+1773750710: Sending PINGRESP to ESP32-B0A732D765D0
+1773750722: Client flask-subscriber closed its connection.

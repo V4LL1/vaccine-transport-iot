@@ -61,7 +61,7 @@ if %errorlevel%==0 (
 echo.
 echo ============================================
 echo  Todos os servicos estao rodando!
-echo  Dashboard: http://10.0.0.175:5000
+echo  Dashboard: https://10.0.0.175:5000
 echo ============================================
 echo.
 echo Pressione qualquer tecla para fechar esta janela.

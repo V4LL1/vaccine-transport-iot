@@ -56,8 +56,32 @@ openssl x509 -req -days 3650 \
   -out broker.crt -extfile ext.cnf
 echo "Broker cert: OK"
 
+echo "=== Gerando certificado do Flask ==="
+cat > flask.cnf << 'EOF'
+[req]
+default_bits = 2048
+prompt = no
+default_md = sha256
+distinguished_name = dn
+
+[dn]
+C=BR
+ST=SP
+L=Campinas
+O=VaccineTransport
+OU=Flask
+CN=10.0.0.175
+EOF
+
+openssl genrsa -out flask.key 2048
+openssl req -new -key flask.key -out flask.csr -config flask.cnf
+openssl x509 -req -days 825 \
+  -in flask.csr -CA ca.crt -CAkey ca.key -CAcreateserial \
+  -out flask.crt -extfile ext.cnf
+echo "Flask cert: OK"
+
 echo ""
 echo "Arquivos gerados:"
 ls -la *.crt *.key 2>/dev/null
 echo ""
-echo "IMPORTANTE: Nunca commitar ca.key e broker.key no repositório!"
+echo "IMPORTANTE: Nunca commitar ca.key, broker.key ou flask.key no repositório!"
