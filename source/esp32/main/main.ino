@@ -1,6 +1,7 @@
 // ============================================================
 // Vaccine Transport IoT — Firmware ESP32
 // Milestone 2: TLS/SSL + Credenciais MQTT + HMAC + Nonce
+// BCP: Hardware Watchdog (reset automatico se loop travar)
 // ============================================================
 
 #define MQTT_MAX_PACKET_SIZE 768   // Maior por causa do HMAC
@@ -11,7 +12,11 @@
 #include <ArduinoJson.h>
 #include <DHT.h>
 #include <TinyGPS++.h>
-#include "mbedtls/md.h"     // HMAC-SHA256
+#include "mbedtls/md.h"       // HMAC-SHA256
+#include "esp_task_wdt.h"     // Hardware Watchdog Timer
+
+// Watchdog: reinicia o ESP32 se o loop principal travar por mais de N segundos
+#define WDT_TIMEOUT_SEC 60
 
 // ======== CONFIGURAÇÕES — ALTERE ANTES DE GRAVAR ========
 const char* WIFI_SSID     = "Quartos";
@@ -137,6 +142,7 @@ void connectWiFi() {
 
   int tentativas = 0;
   while (WiFi.status() != WL_CONNECTED) {
+    esp_task_wdt_reset();   // alimenta o watchdog durante reconexão
     delay(1000);
     Serial.print(".");
     tentativas++;
@@ -154,6 +160,7 @@ void connectWiFi() {
 // -------------------------------------------------------
 void connectMQTT() {
   while (!mqttClient.connected()) {
+    esp_task_wdt_reset();   // alimenta o watchdog durante reconexão
     Serial.print("[MQTT] Conectando ao broker (TLS)...");
 
     // Conecta com credenciais
@@ -238,6 +245,18 @@ void setup() {
   delay(1000);
   Serial.println("\n=== Vaccine Transport IoT M2 — Iniciando ===");
 
+  // Inicializa hardware watchdog — reinicia o ESP32 se o loop travar
+  // API IDF 5.x: recebe esp_task_wdt_config_t em vez de (timeout, panic)
+  esp_task_wdt_deinit();  // garante estado limpo antes de configurar
+  const esp_task_wdt_config_t wdt_config = {
+    .timeout_ms     = WDT_TIMEOUT_SEC * 1000,
+    .idle_core_mask = 0,      // não monitora idle tasks
+    .trigger_panic  = true,   // reinicia o ESP32 ao disparar
+  };
+  esp_task_wdt_init(&wdt_config);
+  esp_task_wdt_add(NULL);     // monitora a task atual (loop)
+  Serial.printf("[WDT] Watchdog ativo — timeout: %ds\n", WDT_TIMEOUT_SEC);
+
   dht.begin();
   SerialGPS.begin(GPS_BAUD, SERIAL_8N1, GPS_RX_PIN, GPS_TX_PIN);
 
@@ -264,6 +283,8 @@ void setup() {
 
 // -------------------------------------------------------
 void loop() {
+  esp_task_wdt_reset();   // alimenta o watchdog — prova que o loop está vivo
+
   while (SerialGPS.available() > 0) {
     gps.encode(SerialGPS.read());
   }
