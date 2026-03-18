@@ -1,7 +1,7 @@
 // ============================================================
 // Vaccine Transport IoT — Firmware ESP32
 // Milestone 2: TLS/SSL + Credenciais MQTT + HMAC + Nonce
-// BCP: Hardware Watchdog (reset automatico se loop travar)
+// BCP: Hardware Watchdog + Buffer Offline SPIFFS
 // ============================================================
 
 #define MQTT_MAX_PACKET_SIZE 768   // Maior por causa do HMAC
@@ -14,9 +14,22 @@
 #include <TinyGPS++.h>
 #include "mbedtls/md.h"       // HMAC-SHA256
 #include "esp_task_wdt.h"     // Hardware Watchdog Timer
+#include <SPIFFS.h>           // Buffer offline
+#include <time.h>             // NTP — clock de fallback quando GPS sem fix
+#include <vector>             // std::vector para flush do buffer
 
 // Watchdog: reinicia o ESP32 se o loop principal travar por mais de N segundos
 #define WDT_TIMEOUT_SEC 60
+
+// Buffer offline: armazena leituras no SPIFFS quando sem conexão
+#define BUFFER_FILE      "/buffer.jsonl"
+#define BUFFER_TMP_FILE  "/buffer.tmp"
+#define BUFFER_MAX_BYTES 102400   // 100 KB ≈ 500 leituras (~40 min a 5s)
+
+// NTP: servidores e flag de sincronização
+#define NTP_SERVER1 "pool.ntp.org"
+#define NTP_SERVER2 "time.google.com"
+bool ntpSynced = false;
 
 // ======== CONFIGURAÇÕES — ALTERE ANTES DE GRAVAR ========
 const char* WIFI_SSID     = "Quartos";
@@ -91,9 +104,10 @@ HardwareSerial SerialGPS(1);
 WiFiClientSecure wifiClientSecure;
 PubSubClient     mqttClient(wifiClientSecure);
 
-// Controle de tempo
+// Controle de tempo e estado de conexão
 unsigned long lastPublish   = 0;
 unsigned long lastHeartbeat = 0;
+bool prevMqttOk = false;   // detecta transição desconectado → conectado
 
 
 // -------------------------------------------------------
@@ -133,73 +147,202 @@ String computeHMAC(const String& data) {
 
 
 // -------------------------------------------------------
-void connectWiFi() {
-  if (WiFi.status() == WL_CONNECTED) return;
+// Tenta conectar ao WiFi (máx. 10s). Retorna true se conectado.
+// Não bloqueia indefinidamente — o loop continua mesmo sem WiFi.
+bool ensureWiFi() {
+  if (WiFi.status() == WL_CONNECTED) return true;
 
-  Serial.print("[WiFi] Conectando a ");
-  Serial.println(WIFI_SSID);
+  Serial.printf("[WiFi] Sem conexão. Tentando %s...\n", WIFI_SSID);
+  WiFi.disconnect(true);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
-  int tentativas = 0;
-  while (WiFi.status() != WL_CONNECTED) {
-    esp_task_wdt_reset();   // alimenta o watchdog durante reconexão
+  for (int i = 0; i < 10; i++) {
+    esp_task_wdt_reset();
     delay(1000);
-    Serial.print(".");
-    tentativas++;
-    if (tentativas > 20) {
-      Serial.println("\n[WiFi] Falha! Reiniciando...");
-      ESP.restart();
+    if (WiFi.status() == WL_CONNECTED) {
+      Serial.printf("[WiFi] Reconectado! IP: %s\n",
+                    WiFi.localIP().toString().c_str());
+      ntpSynced = false;  // força resync após reconexão
+      syncNTP();
+      return true;
     }
   }
-  Serial.println();
-  Serial.print("[WiFi] Conectado! IP: ");
-  Serial.println(WiFi.localIP());
+  Serial.println("[WiFi] Falha. Gravando offline e tentando no proximo ciclo.");
+  return false;
 }
 
 
 // -------------------------------------------------------
-void connectMQTT() {
-  while (!mqttClient.connected()) {
-    esp_task_wdt_reset();   // alimenta o watchdog durante reconexão
-    Serial.print("[MQTT] Conectando ao broker (TLS)...");
+// Sincroniza clock interno via NTP (máx. 5s).
+// Chamado após cada reconexão WiFi — fallback de timestamp quando GPS sem fix.
+void syncNTP() {
+  if (ntpSynced) return;   // já sincronizado — clock interno continua andando
+  configTime(0, 0, NTP_SERVER1, NTP_SERVER2);  // UTC, sem DST
+  struct tm t;
+  for (int i = 0; i < 10; i++) {
+    esp_task_wdt_reset();
+    delay(500);
+    if (getLocalTime(&t) && t.tm_year > 100) {  // ano > 2000
+      ntpSynced = true;
+      char buf[25];
+      strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%SZ", &t);
+      Serial.printf("[NTP] Sincronizado: %s\n", buf);
+      return;
+    }
+  }
+  Serial.println("[NTP] Falha na sincronização. Tentando no proximo ciclo.");
+}
 
-    // Conecta com credenciais
-    if (mqttClient.connect(DEVICE_ID, MQTT_USER, MQTT_PASS)) {
-      Serial.println(" OK");
+
+// -------------------------------------------------------
+// Tenta UMA conexão MQTT. Retorna true se conectado.
+// Não bloqueia — se falhar, o loop continua e grava no buffer.
+bool ensureMQTT() {
+  if (mqttClient.connected()) return true;
+
+  Serial.print("[MQTT] Tentando broker...");
+  if (mqttClient.connect(DEVICE_ID, MQTT_USER, MQTT_PASS)) {
+    Serial.println(" OK");
+    return true;
+  }
+  Serial.printf(" Falha (rc=%d). Gravando offline.\n", mqttClient.state());
+  return false;
+}
+
+
+// -------------------------------------------------------
+// Salva payload JSON no buffer offline (SPIFFS)
+void saveToBuffer(const char* payload) {
+  if (SPIFFS.exists(BUFFER_FILE)) {
+    File f = SPIFFS.open(BUFFER_FILE, "r");
+    if (f && f.size() >= BUFFER_MAX_BYTES) {
+      f.close();
+      Serial.println("[Buffer] Cheio! Leitura descartada.");
+      return;
+    }
+    if (f) f.close();
+  }
+  File f = SPIFFS.open(BUFFER_FILE, "a");
+  if (!f) {
+    Serial.println("[Buffer] Erro ao abrir arquivo!");
+    return;
+  }
+  f.println(payload);
+  f.close();
+  Serial.println("[Buffer] Leitura salva offline.");
+}
+
+
+// -------------------------------------------------------
+// Envia todas as leituras do buffer e remove o arquivo.
+// Linhas com falha voltam ao buffer via arquivo temporário.
+void flushBuffer() {
+  if (!SPIFFS.exists(BUFFER_FILE)) return;
+
+  // Aguarda conexão estabilizar antes de publicar
+  delay(300);
+  for (int i = 0; i < 3; i++) { mqttClient.loop(); delay(50); }
+
+  if (!mqttClient.connected()) {
+    Serial.println("[Buffer] Conexao perdeu antes do flush. Adiando.");
+    return;
+  }
+
+  File src = SPIFFS.open(BUFFER_FILE, "r");
+  if (!src) { Serial.println("[Buffer] Erro ao abrir buffer para leitura."); return; }
+
+  size_t fileSize = src.size();
+  Serial.printf("[Buffer] Iniciando flush — %u bytes no buffer.\n", fileSize);
+
+  // Coleta todas as linhas em memória antes de apagar o arquivo
+  std::vector<String> lines;
+  while (src.available()) {
+    String line = src.readStringUntil('\n');
+    line.trim();
+    if (line.length() > 0) lines.push_back(line);
+  }
+  src.close();
+  SPIFFS.remove(BUFFER_FILE);  // apaga agora — reescreve só o que falhar
+
+  Serial.printf("[Buffer] %d leituras para enviar.\n", (int)lines.size());
+
+  int published = 0;
+  std::vector<String> failed;
+
+  for (auto& line : lines) {
+    esp_task_wdt_reset();
+    mqttClient.loop();
+
+    if (!mqttClient.connected()) {
+      Serial.println("[Buffer] Conexao caiu durante flush. Salvando restantes.");
+      failed.push_back(line);
+      // adiciona as restantes também
+      for (size_t j = &line - &lines[0] + 1; j < lines.size(); j++)
+        failed.push_back(lines[j]);
+      break;
+    }
+
+    bool ok = mqttClient.publish(TOPIC_READINGS, line.c_str());
+    Serial.printf("[Buffer] Linha %d/%d: %s\n",
+                  published + (int)failed.size() + 1, (int)lines.size(),
+                  ok ? "OK" : "FALHOU");
+    if (ok) {
+      published++;
+      mqttClient.loop();
+      delay(150);
     } else {
-      Serial.print(" Falha (rc=");
-      Serial.print(mqttClient.state());
-      Serial.println("). Tentando em 3s...");
-      delay(3000);
+      failed.push_back(line);
     }
+  }
+
+  // Salva de volta as que falharam
+  if (!failed.empty()) {
+    File f = SPIFFS.open(BUFFER_FILE, "w");
+    if (f) {
+      for (auto& l : failed) f.println(l);
+      f.close();
+    }
+    Serial.printf("[Buffer] Flush parcial: %d enviados, %d pendentes\n",
+                  published, (int)failed.size());
+  } else {
+    Serial.printf("[Buffer] Flush completo: %d leituras enviadas\n", published);
   }
 }
 
 
 // -------------------------------------------------------
+// Prioridade: GPS (mais preciso) → NTP (fallback) → vazio (Flask usa NOW())
 String buildTimestamp() {
-  if (gps.date.isValid() && gps.time.isValid()) {
+  // 1. GPS com fix válido
+  if (gps.date.isValid() && gps.time.isValid() && gps.date.year() > 2000) {
     char buf[25];
     snprintf(buf, sizeof(buf), "%04d-%02d-%02dT%02d:%02d:%02dZ",
              gps.date.year(), gps.date.month(), gps.date.day(),
              gps.time.hour(), gps.time.minute(), gps.time.second());
     return String(buf);
   }
+  // 2. NTP sincronizado — clock interno do ESP continua andando mesmo offline
+  if (ntpSynced) {
+    struct tm t;
+    if (getLocalTime(&t) && t.tm_year > 100) {
+      char buf[25];
+      strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%SZ", &t);
+      return String(buf);
+    }
+  }
+  // 3. Sem fonte de tempo — Flask normalizará para NOW()
   return "";
 }
 
 
 // -------------------------------------------------------
-void publishReading(float temp, float hum) {
-  String ts = buildTimestamp();
-
+// Monta o payload JSON em buf — usado tanto para publish como para buffer
+void buildPayload(float temp, float hum, char* buf, size_t bufLen) {
   StaticJsonDocument<512> doc;
-  doc["device_id"]   = DEVICE_ID;  // MAC-based, sem hardcoding
-  doc["timestamp"]   = ts;
-  // trip_id não é mais enviado — Flask resolve pelo registro do device
+  doc["device_id"]   = DEVICE_ID;
+  doc["timestamp"]   = buildTimestamp();
   doc["temperature"] = isnan(temp) ? (float)0.0 : temp;
   doc["humidity"]    = isnan(hum)  ? (float)0.0 : hum;
-
   if (gps.location.isValid()) {
     doc["latitude"]   = gps.location.lat();
     doc["longitude"]  = gps.location.lng();
@@ -209,19 +352,22 @@ void publishReading(float temp, float hum) {
     doc["longitude"]  = (float)0.0;
     doc["satellites"] = 0;
   }
-
   doc["hmac"]  = "";
   doc["nonce"] = "";
+  serializeJson(doc, buf, bufLen);
+}
 
-  char payload[512];
-  serializeJson(doc, payload, sizeof(payload));
 
+// -------------------------------------------------------
+// Publica payload via MQTT — retorna true se sucesso
+bool publishReading(const char* payload) {
   if (mqttClient.publish(TOPIC_READINGS, payload)) {
     Serial.print("[MQTT] Publicado: ");
     Serial.println(payload);
-  } else {
-    Serial.println("[MQTT] Falha ao publicar!");
+    return true;
   }
+  Serial.println("[MQTT] Falha ao publicar!");
+  return false;
 }
 
 
@@ -257,10 +403,28 @@ void setup() {
   esp_task_wdt_add(NULL);     // monitora a task atual (loop)
   Serial.printf("[WDT] Watchdog ativo — timeout: %ds\n", WDT_TIMEOUT_SEC);
 
+  // Inicializa SPIFFS para buffer offline
+  if (!SPIFFS.begin(true)) {
+    Serial.println("[SPIFFS] Falha ao montar! Buffer offline indisponivel.");
+  } else {
+    size_t used  = SPIFFS.usedBytes();
+    size_t total = SPIFFS.totalBytes();
+    Serial.printf("[SPIFFS] Montado — %u KB usados / %u KB totais\n",
+                  used / 1024, total / 1024);
+    if (SPIFFS.exists(BUFFER_FILE)) {
+      File f = SPIFFS.open(BUFFER_FILE, "r");
+      Serial.printf("[SPIFFS] Buffer offline encontrado (%u bytes) — sera enviado ao conectar\n",
+                    f ? (unsigned)f.size() : 0);
+      if (f) f.close();
+    }
+  }
+
   dht.begin();
   SerialGPS.begin(GPS_BAUD, SERIAL_8N1, GPS_RX_PIN, GPS_TX_PIN);
 
-  connectWiFi();
+  // Conecta WiFi no boot — tenta até 10s; se falhar, o loop tratará
+  ensureWiFi();
+  syncNTP();  // sincroniza clock logo no boot
 
   // Gerar device ID único a partir do MAC address
   // Formato: ESP32-AABBCCDDEEFF — sem hardcoding, único por hardware
@@ -289,14 +453,27 @@ void loop() {
     gps.encode(SerialGPS.read());
   }
 
-  if (WiFi.status() != WL_CONNECTED) {
-    Serial.println("[WiFi] Conexão perdida. Reconectando...");
-    connectWiFi();
+  // Verifica conectividade — não bloqueante; falha → grava no buffer
+  bool wifiOk = ensureWiFi();
+  bool mqttOk = wifiOk && ensureMQTT();
+
+  if (mqttOk) {
+    mqttClient.loop();
+    // Flush só quando acaba de reconectar (transição false → true)
+    if (!prevMqttOk) {
+      Serial.println("[MQTT] Reconectado! Aguardando subscribers reconectarem (5s)...");
+      // QoS 0: broker não guarda mensagens. Aguardamos o Flask resubscrever
+      // antes de publicar o buffer, senão as mensagens são perdidas.
+      for (int i = 0; i < 50; i++) {
+        esp_task_wdt_reset();
+        mqttClient.loop();
+        delay(100);
+      }
+      Serial.println("[MQTT] Verificando buffer offline...");
+      flushBuffer();
+    }
   }
-  if (!mqttClient.connected()) {
-    connectMQTT();
-  }
-  mqttClient.loop();
+  prevMqttOk = mqttOk;
 
   unsigned long now = millis();
 
@@ -320,11 +497,22 @@ void loop() {
       Serial.println("[GPS] Aguardando fix...");
     }
 
-    publishReading(temp, hum);
+    // Monta payload uma única vez — usado tanto para publish como para buffer
+    char payload[512];
+    buildPayload(temp, hum, payload, sizeof(payload));
+
+    if (mqttOk) {
+      if (!publishReading(payload)) {
+        saveToBuffer(payload);  // publish falhou → guarda localmente
+      }
+    } else {
+      saveToBuffer(payload);    // sem conexão → guarda localmente
+      Serial.println("[Modo offline] Leitura armazenada no SPIFFS.");
+    }
   }
 
   if (now - lastHeartbeat >= HEARTBEAT_INTERVAL) {
     lastHeartbeat = now;
-    publishHeartbeat();
+    if (mqttOk) publishHeartbeat();
   }
 }

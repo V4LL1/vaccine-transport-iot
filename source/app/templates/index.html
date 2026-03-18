@@ -382,6 +382,10 @@ select:focus { border-color: var(--accent); }
       <span class="ni">📋</span> Audit Log
     </a>
     {% endif %}
+    <div class="nav-label" style="margin-top:8px">Relatórios</div>
+    <a class="nav-item" href="#" onclick="openTripReadingsMenu(event)">
+      <span class="ni">📊</span> Registros de Viagem
+    </a>
   </nav>
 
   <div class="sidebar-footer">
@@ -760,11 +764,16 @@ async function refreshDevices() {
         active.forEach(d => {
             const div = document.createElement("div");
             div.className = "device-card";
-            const trip = d.active_trip_id ? `Viagem #${d.active_trip_id}` : "Sem viagem ativa";
+            const tripLink = d.active_trip_id
+                ? `<a href="/trips/${d.active_trip_id}/readings" target="_blank"
+                      style="color:var(--accent);text-decoration:none;font-size:.75rem">
+                     Viagem #${d.active_trip_id} ↗
+                   </a>`
+                : `<span style="color:var(--muted)">Sem viagem ativa</span>`;
             div.innerHTML = `
               <div>
                 <div class="device-name">${d.name || d.serial_number}</div>
-                <div class="device-time">${trip} · Sinal: ${d.last_seen ? d.last_seen.slice(11,19) : '—'}</div>
+                <div class="device-time">${tripLink} · Sinal: ${d.last_seen ? d.last_seen.slice(11,19) : '—'}</div>
               </div>
               <span class="badge ${clsMap[d.connectivity]||'badge-gray'}">${labelMap[d.connectivity]||d.connectivity}</span>`;
             el.appendChild(div);
@@ -833,7 +842,13 @@ async function refreshAdminTrips() {
               <td style="font-size:.78rem">${t.origin} → ${t.destination}</td>
               <td style="font-size:.78rem">${device}</td>
               <td>${status}</td>
-              <td>${close}</td>`;
+              <td style="display:flex;gap:6px;flex-wrap:wrap">
+                <a href="/trips/${t.trip_id}/readings" target="_blank"
+                   style="font-size:.72rem;padding:4px 10px;background:#1e1b4b;color:#a78bfa;border:1px solid #3730a3;border-radius:6px;text-decoration:none;white-space:nowrap">
+                  Ver registros
+                </a>
+                ${close}
+              </td>`;
             tbody.appendChild(tr);
         });
     } catch(e) {}
@@ -932,6 +947,46 @@ async function closeTrip(tripId) {
 }
 
 function closeModal(id) { document.getElementById(id).style.display = "none"; }
+
+// ---- Registros de Viagem ----
+async function openTripReadingsMenu(e) {
+    e.preventDefault();
+    let menu = document.getElementById("tripReadingsMenu");
+    if (menu) { menu.remove(); return; }
+
+    const trips = await fetchJSON("/api/trips");
+    menu = document.createElement("div");
+    menu.id = "tripReadingsMenu";
+    menu.style.cssText = `
+        position:fixed; top:0; left:220px; height:100vh; width:280px;
+        background:#1a1d27; border-right:1px solid #2d3148;
+        z-index:200; padding:20px 16px; overflow-y:auto;
+        box-shadow: 4px 0 20px rgba(0,0,0,.4);`;
+    menu.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <span style="font-weight:700;color:#a78bfa;font-size:.9rem">📊 Registros de Viagem</span>
+          <button onclick="document.getElementById('tripReadingsMenu').remove()"
+                  style="background:none;border:none;color:#7c8db5;cursor:pointer;font-size:18px">×</button>
+        </div>
+        ${trips.length === 0 ? '<p style="color:#475569;font-size:.8rem">Nenhuma viagem encontrada.</p>' :
+          trips.map(t => `
+            <a href="/trips/${t.trip_id}/readings" target="_blank"
+               onclick="document.getElementById('tripReadingsMenu').remove()"
+               style="display:block;padding:12px;margin-bottom:8px;background:#151720;
+                      border:1px solid #2d3148;border-radius:8px;text-decoration:none;
+                      color:#e2e8f0;transition:background .15s"
+               onmouseover="this.style.background='#1e2135'" onmouseout="this.style.background='#151720'">
+              <div style="font-weight:700;color:#a78bfa;font-size:.85rem">#${t.trip_id} — ${t.vaccine_name}</div>
+              <div style="font-size:.72rem;color:#7c8db5;margin-top:3px">${t.origin} → ${t.destination}</div>
+              <div style="font-size:.7rem;margin-top:4px">
+                <span style="padding:2px 8px;border-radius:10px;font-weight:600;
+                  ${t.status === 'active' ? 'background:#14532d;color:#4ade80' : 'background:#1e1b4b;color:#818cf8'}">
+                  ${t.status === 'active' ? 'Ativa' : 'Encerrada'}
+                </span>
+              </div>
+            </a>`).join('')}`;
+    document.body.appendChild(menu);
+}
 
 // ---- Leituras recentes ----
 async function refreshRecent() {

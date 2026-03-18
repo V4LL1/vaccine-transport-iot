@@ -458,6 +458,61 @@ def index():
     )
 
 
+@app.route("/trips/<int:trip_id>/readings")
+@login_required
+@require_permission("view_readings")
+def trip_readings_page(trip_id):
+    conn = db()
+    cur  = conn.cursor(dictionary=True)
+    # Detalhes da viagem
+    cur.execute("""
+        SELECT t.trip_id, t.origin, t.destination, t.start_time, t.end_time,
+               IF(t.end_time IS NULL, 'active', 'closed') AS status,
+               d.serial_number AS device_serial, d.name AS device_name,
+               b.batch_code, v.name AS vaccine_name, v.min_temp, v.max_temp
+        FROM trips t
+        LEFT JOIN devices d ON t.device_id = d.device_id
+        JOIN vaccine_batch b ON t.batch_id = b.batch_id
+        JOIN vaccines v ON b.vaccine_id = v.vaccine_id
+        WHERE t.trip_id = %s
+    """, (trip_id,))
+    trip = cur.fetchone()
+    if not trip:
+        cur.close(); conn.close()
+        return "Viagem não encontrada", 404
+    # Todas as leituras
+    cur.execute("""
+        SELECT r.reading_id, r.timestamp, r.temperature, r.humidity,
+               r.latitude, r.longitude, v.min_temp, v.max_temp
+        FROM readings r
+        JOIN vaccine_batch b ON r.batch_id = b.batch_id
+        JOIN vaccines v ON b.vaccine_id = v.vaccine_id
+        WHERE r.trip_id = %s
+        ORDER BY r.timestamp ASC
+    """, (trip_id,))
+    readings_data = cur.fetchall()
+    cur.close(); conn.close()
+    temps = [r["temperature"] for r in readings_data if r["temperature"] is not None]
+    violations = sum(
+        1 for r in readings_data
+        if r["temperature"] is not None
+        and (r["temperature"] < trip["min_temp"] or r["temperature"] > trip["max_temp"])
+    )
+    stats = {
+        "total":      len(readings_data),
+        "violations": violations,
+        "avg":        round(sum(temps) / len(temps), 2) if temps else None,
+        "max":        round(max(temps), 2) if temps else None,
+        "min":        round(min(temps), 2) if temps else None,
+    }
+    return render_template("trip_readings.html",
+                           trip=trip,
+                           readings=readings_data,
+                           stats=stats,
+                           user_name=current_user.name,
+                           user_role=current_user.role)
+
+
 @app.route("/api/trips")
 @login_required
 def trips():
@@ -465,6 +520,7 @@ def trips():
     cur  = conn.cursor(dictionary=True)
     cur.execute("""
         SELECT t.trip_id, t.start_time, t.end_time, t.origin, t.destination,
+               IF(t.end_time IS NULL, 'active', 'closed') AS status,
                b.batch_code, v.name AS vaccine_name,
                v.min_temp, v.max_temp,
                d.serial_number AS device_serial, d.name AS device_name

@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Viagem #{{ trip.trip_id }} — Registros</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #0f1117; color: #e2e8f0; font-family: 'Segoe UI', sans-serif; min-height: 100vh; }
+
+    header {
+      background: #1a1d27;
+      border-bottom: 1px solid #2d3148;
+      padding: 16px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    header h1 { font-size: 18px; font-weight: 600; color: #a78bfa; }
+    header a {
+      color: #7c8db5;
+      text-decoration: none;
+      font-size: 13px;
+      padding: 6px 14px;
+      border: 1px solid #2d3148;
+      border-radius: 6px;
+      transition: all .2s;
+    }
+    header a:hover { background: #2d3148; color: #e2e8f0; }
+
+    .container { max-width: 1200px; margin: 0 auto; padding: 28px 24px; }
+
+    /* Trip info card */
+    .trip-card {
+      background: #1a1d27;
+      border: 1px solid #2d3148;
+      border-radius: 10px;
+      padding: 20px 24px;
+      margin-bottom: 24px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+    }
+    .trip-field label { font-size: 11px; color: #7c8db5; text-transform: uppercase; letter-spacing: .5px; }
+    .trip-field span  { display: block; font-size: 14px; color: #e2e8f0; margin-top: 4px; font-weight: 500; }
+
+    .status-badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .status-active   { background: #14532d; color: #4ade80; }
+    .status-closed   { background: #1e1b4b; color: #818cf8; }
+
+    /* Stats bar */
+    .stats {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .stat-box {
+      background: #1a1d27;
+      border: 1px solid #2d3148;
+      border-radius: 8px;
+      padding: 12px 20px;
+      flex: 1;
+      min-width: 140px;
+    }
+    .stat-box .val { font-size: 22px; font-weight: 700; color: #a78bfa; }
+    .stat-box .lbl { font-size: 11px; color: #7c8db5; margin-top: 2px; }
+    .stat-box.danger .val { color: #f87171; }
+    .stat-box.ok    .val  { color: #4ade80; }
+
+    /* Table */
+    .table-wrap {
+      background: #1a1d27;
+      border: 1px solid #2d3148;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .table-header {
+      padding: 14px 20px;
+      border-bottom: 1px solid #2d3148;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .table-header h2 { font-size: 14px; font-weight: 600; color: #a78bfa; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead th {
+      background: #151720;
+      padding: 10px 14px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      color: #7c8db5;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      border-bottom: 1px solid #2d3148;
+      position: sticky;
+      top: 0;
+    }
+    tbody tr { border-bottom: 1px solid #1e2135; transition: background .15s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #1e2135; }
+    tbody td { padding: 9px 14px; color: #cbd5e1; }
+    tbody td.mono { font-family: 'Consolas', monospace; font-size: 12px; }
+
+    .temp-ok      { color: #4ade80; font-weight: 600; }
+    .temp-danger  { color: #f87171; font-weight: 600; }
+    .row-danger   { background: rgba(248,113,113,.05); }
+
+    .idx { color: #475569; font-size: 11px; }
+    .no-gps { color: #475569; font-style: italic; }
+
+    .empty { padding: 48px; text-align: center; color: #475569; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Viagem #{{ trip.trip_id }} — {{ trip.vaccine_name }} ({{ trip.batch_code }})</h1>
+  <a href="/">← Voltar ao Dashboard</a>
+</header>
+
+<div class="container">
+
+  <!-- Trip info -->
+  <div class="trip-card">
+    <div class="trip-field">
+      <label>Status</label>
+      <span>
+        <span class="status-badge {% if trip.status == 'active' %}status-active{% else %}status-closed{% endif %}">
+          {{ 'Ativa' if trip.status == 'active' else 'Encerrada' }}
+        </span>
+      </span>
+    </div>
+    <div class="trip-field">
+      <label>Dispositivo</label>
+      <span>{{ trip.device_name or trip.device_serial or '—' }}</span>
+    </div>
+    <div class="trip-field">
+      <label>Origem → Destino</label>
+      <span>{{ trip.origin }} → {{ trip.destination }}</span>
+    </div>
+    <div class="trip-field">
+      <label>Início</label>
+      <span>{{ trip.start_time.strftime('%d/%m/%Y %H:%M') if trip.start_time else '—' }}</span>
+    </div>
+    <div class="trip-field">
+      <label>Fim</label>
+      <span>{{ trip.end_time.strftime('%d/%m/%Y %H:%M') if trip.end_time else '—' }}</span>
+    </div>
+    <div class="trip-field">
+      <label>Faixa de Temperatura</label>
+      <span>{{ trip.min_temp }}°C a {{ trip.max_temp }}°C</span>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat-box">
+      <div class="val">{{ stats.total }}</div>
+      <div class="lbl">Total de registros</div>
+    </div>
+    <div class="stat-box {% if stats.violations > 0 %}danger{% else %}ok{% endif %}">
+      <div class="val">{{ stats.violations }}</div>
+      <div class="lbl">Violações de temperatura</div>
+    </div>
+    {% if stats.avg is not none %}
+    <div class="stat-box">
+      <div class="val">{{ stats.avg }}°C</div>
+      <div class="lbl">Temperatura média</div>
+    </div>
+    <div class="stat-box">
+      <div class="val">{{ stats.max }}°C</div>
+      <div class="lbl">Temperatura máxima</div>
+    </div>
+    <div class="stat-box">
+      <div class="val">{{ stats.min }}°C</div>
+      <div class="lbl">Temperatura mínima</div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Table -->
+  <div class="table-wrap">
+    <div class="table-header">
+      <h2>Registros</h2>
+      <span style="font-size:12px;color:#7c8db5;">{{ readings | length }} leituras · ordem cronológica</span>
+    </div>
+    {% if readings %}
+    <div style="max-height: 65vh; overflow-y: auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Timestamp</th>
+            <th>Temperatura</th>
+            <th>Umidade</th>
+            <th>Latitude</th>
+            <th>Longitude</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in readings %}
+          {% set ok = r.temperature >= r.min_temp and r.temperature <= r.max_temp %}
+          <tr class="{{ '' if ok else 'row-danger' }}">
+            <td class="idx">{{ loop.index }}</td>
+            <td class="mono">{{ r.timestamp }}</td>
+            <td class="{{ 'temp-ok' if ok else 'temp-danger' }}">{{ '%.2f' % r.temperature }}°C</td>
+            <td>{{ '%.1f' % r.humidity }}%</td>
+            <td class="mono {% if not r.latitude %}no-gps{% endif %}">
+              {{ '%.6f' % r.latitude if r.latitude else 'sem fix' }}
+            </td>
+            <td class="mono {% if not r.longitude %}no-gps{% endif %}">
+              {{ '%.6f' % r.longitude if r.longitude else 'sem fix' }}
+            </td>
+            <td>
+              {% if ok %}
+                <span style="color:#4ade80;font-size:12px;">✓ OK</span>
+              {% else %}
+                <span style="color:#f87171;font-size:12px;">✗ Violação</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <div class="empty">Nenhum registro encontrado para esta viagem.</div>
+    {% endif %}
+  </div>
+
+</div>
+</body>
+</html>
