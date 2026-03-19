@@ -4,20 +4,39 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Login — VaccineTransport IoT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:      #0f0f0f;
+  --surface: #1c1c1c;
+  --border:  rgba(255,255,255,0.08);
+  --border2: rgba(255,255,255,0.14);
+  --text:    #ededed;
+  --muted:   #888;
+  --accent:  #3ECF8E;
+  --accent-d:#2db67d;
+  --danger:  #f66060;
+}
 body {
-  font-family: 'Segoe UI', system-ui, sans-serif;
-  background: #0b1120;
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
   min-height: 100vh;
   display: grid;
   grid-template-columns: 1fr 1fr;
 }
+@media (max-width: 720px) {
+  body { grid-template-columns: 1fr; }
+  .left-panel { display: none; }
+}
 
-/* Left panel */
+/* ── Left panel ──────────────────────────────────────────── */
 .left-panel {
-  background: linear-gradient(145deg, #0f172a 0%, #0e1e38 60%, #0a1628 100%);
-  border-right: 1px solid #1f2d44;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
   display: flex; flex-direction: column;
   justify-content: space-between;
   padding: 48px;
@@ -26,104 +45,105 @@ body {
 .left-panel::before {
   content: '';
   position: absolute; inset: 0;
-  background: radial-gradient(ellipse at 30% 40%, rgba(14,165,233,.07) 0%, transparent 60%),
-              radial-gradient(ellipse at 70% 80%, rgba(99,102,241,.05) 0%, transparent 50%);
+  background:
+    radial-gradient(ellipse at 20% 30%, rgba(62,207,142,.06) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 80%, rgba(62,207,142,.03) 0%, transparent 50%);
+  pointer-events: none;
 }
 .panel-logo {
   display: flex; align-items: center; gap: 12px; position: relative;
 }
-.panel-logo .icon {
-  width: 44px; height: 44px;
-  background: linear-gradient(135deg, #0ea5e9, #6366f1);
-  border-radius: 12px;
+.logo-mark {
+  width: 40px; height: 40px;
+  background: var(--accent);
+  border-radius: 10px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 22px;
+  font-size: 20px;
 }
-.panel-logo h1 { font-size: 1.1rem; font-weight: 700; color: #f1f5f9; }
-.panel-logo p  { font-size: .72rem; color: #475569; margin-top: 2px; }
+.logo-text { font-size: .85rem; font-weight: 700; color: var(--text); line-height: 1.3; }
+.logo-text small { color: var(--muted); font-weight: 400; font-size: .72rem; display: block; }
 
 .panel-content { position: relative; }
 .panel-content h2 {
-  font-size: 2rem; font-weight: 800;
-  color: #f1f5f9; line-height: 1.25; margin-bottom: 16px;
+  font-size: 2rem; font-weight: 700;
+  color: var(--text); line-height: 1.3; margin-bottom: 14px;
 }
-.panel-content h2 span { color: #38bdf8; }
-.panel-content p { color: #64748b; font-size: .9rem; line-height: 1.7; max-width: 380px; }
+.panel-content h2 em { color: var(--accent); font-style: normal; }
+.panel-content p { color: var(--muted); font-size: .88rem; line-height: 1.7; max-width: 360px; }
+
 .features { margin-top: 28px; display: flex; flex-direction: column; gap: 12px; }
 .feature {
   display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px; border-radius: 10px;
+  background: rgba(255,255,255,.03); border: 1px solid var(--border);
 }
 .feature-icon {
-  width: 32px; height: 32px;
-  background: rgba(14,165,233,.1); border: 1px solid rgba(14,165,233,.2);
-  border-radius: 8px;
+  width: 30px; height: 30px;
+  background: rgba(62,207,142,.1); border: 1px solid rgba(62,207,142,.2);
+  border-radius: 7px;
   display: flex; align-items: center; justify-content: center;
   font-size: 14px; flex-shrink: 0;
 }
-.feature-text { font-size: .82rem; color: #94a3b8; }
-.feature-text strong { color: #cbd5e1; }
+.feature-text { font-size: .8rem; color: var(--muted); }
+.feature-text strong { color: var(--text); }
 
-.panel-footer { position: relative; font-size: .72rem; color: #334155; }
+.panel-footer { position: relative; font-size: .68rem; color: #333; }
 
-/* Right panel */
+/* ── Right panel ─────────────────────────────────────────── */
 .right-panel {
   display: flex; align-items: center; justify-content: center;
   padding: 40px 32px;
-  background: #0b1120;
+  background: var(--bg);
 }
-.card {
-  width: 100%; max-width: 380px;
-}
-.card-title {
-  font-size: 1.4rem; font-weight: 700; color: #f1f5f9; margin-bottom: 4px;
-}
-.card-sub { font-size: .85rem; color: #64748b; margin-bottom: 28px; }
+.card { width: 100%; max-width: 360px; }
 
-label { display: block; font-size: .78rem; color: #94a3b8; margin-bottom: 5px; font-weight: 500; }
-.input-wrap { position: relative; margin-bottom: 16px; }
-.input-icon {
-  position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
-  color: #475569; font-size: 14px; pointer-events: none;
+.card-title { font-size: 1.35rem; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+.card-sub   { font-size: .82rem; color: var(--muted); margin-bottom: 28px; }
+
+.form-field { margin-bottom: 14px; }
+.form-field label {
+  display: block; font-size: .72rem; font-weight: 500;
+  color: var(--muted); margin-bottom: 5px;
 }
-input[type=email], input[type=password] {
+.form-field input {
   width: 100%;
-  background: #111827;
-  border: 1px solid #1f2d44;
-  border-radius: 9px;
-  padding: .65rem .9rem .65rem 2.4rem;
-  color: #f1f5f9;
-  font-size: .9rem;
-  outline: none;
-  transition: border-color .2s, box-shadow .2s;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: .68rem .9rem;
+  color: var(--text); font-family: inherit; font-size: .88rem;
+  outline: none; transition: border-color .15s, box-shadow .15s;
 }
-input:focus { border-color: #0ea5e9; box-shadow: 0 0 0 3px rgba(14,165,233,.12); }
+.form-field input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(62,207,142,.12);
+}
+.form-field input::placeholder { color: var(--muted); opacity: .6; }
+
 .btn {
-  width: 100%;
-  background: linear-gradient(135deg, #0ea5e9, #0284c7);
-  color: #fff; border: none; border-radius: 9px;
-  padding: .78rem; font-size: .9rem; font-weight: 600;
-  cursor: pointer; transition: opacity .2s, transform .1s;
+  width: 100%; padding: .75rem;
+  background: var(--accent); color: #0f0f0f;
+  border: none; border-radius: 8px;
+  font-family: inherit; font-size: .88rem; font-weight: 700;
+  cursor: pointer; transition: background .15s, transform .1s;
   display: flex; align-items: center; justify-content: center; gap: 8px;
-  margin-top: 4px;
+  margin-top: 6px;
 }
-.btn:hover { opacity: .9; transform: translateY(-1px); }
-.btn:active { transform: translateY(0); }
+.btn:hover  { background: var(--accent-d); }
+.btn:active { transform: translateY(1px); }
 
-.error {
-  background: rgba(239,68,68,.08);
-  border: 1px solid rgba(239,68,68,.25);
-  border-left: 3px solid #ef4444;
+.error-box {
+  background: rgba(246,96,96,.08); border: 1px solid rgba(246,96,96,.2);
+  border-left: 3px solid var(--danger);
   color: #fca5a5; border-radius: 8px;
-  padding: .65rem .9rem; font-size: .82rem; margin-bottom: 16px;
+  padding: .65rem .9rem; font-size: .8rem; margin-bottom: 16px;
   display: flex; align-items: center; gap: 8px;
 }
+
 .mfa-note {
-  margin-top: 20px; padding: 12px 14px;
-  background: rgba(14,165,233,.06); border: 1px solid rgba(14,165,233,.15);
-  border-radius: 8px; font-size: .76rem; color: #64748b; line-height: 1.6;
+  margin-top: 18px; padding: 12px 14px;
+  background: rgba(62,207,142,.05); border: 1px solid rgba(62,207,142,.12);
+  border-radius: 8px; font-size: .75rem; color: var(--muted); line-height: 1.6;
 }
-.mfa-note strong { color: #38bdf8; }
-.divider { border: none; border-top: 1px solid #1f2d44; margin: 20px 0; }
+.mfa-note strong { color: var(--accent); }
 </style>
 </head>
 <body>
@@ -131,16 +151,15 @@ input:focus { border-color: #0ea5e9; box-shadow: 0 0 0 3px rgba(14,165,233,.12);
 <!-- Left decorative panel -->
 <div class="left-panel">
   <div class="panel-logo">
-    <div class="icon">💉</div>
+    <div class="logo-mark">💉</div>
     <div>
-      <h1>VaccineTransport IoT</h1>
-      <p>Sistema de Monitoramento Seguro</p>
+      <div class="logo-text">VaccineTransport IoT<small>Sistema de Monitoramento Seguro</small></div>
     </div>
   </div>
 
   <div class="panel-content">
-    <h2>Monitoramento<br><span>inteligente</span> de<br>vacinas em trânsito.</h2>
-    <p>Plataforma IoT com múltiplas camadas de segurança para garantir a integridade da cadeia fria de imunobiológicos.</p>
+    <h2>Cadeia fria<br>sob <em>controle total.</em></h2>
+    <p>Plataforma IoT com múltiplas camadas de segurança para garantir a integridade de imunobiológicos em trânsito.</p>
     <div class="features">
       <div class="feature">
         <div class="feature-icon">🔐</div>
@@ -148,15 +167,15 @@ input:focus { border-color: #0ea5e9; box-shadow: 0 0 0 3px rgba(14,165,233,.12);
       </div>
       <div class="feature">
         <div class="feature-icon">🛡️</div>
-        <div class="feature-text"><strong>TLS 1.2</strong> — comunicação MQTT cifrada</div>
+        <div class="feature-text"><strong>TLS 1.2</strong> — comunicação MQTT cifrada ponta a ponta</div>
       </div>
       <div class="feature">
         <div class="feature-icon">📡</div>
         <div class="feature-text"><strong>Tempo real</strong> — ESP32 + DHT22 + GPS NEO-6M</div>
       </div>
       <div class="feature">
-        <div class="feature-icon">📋</div>
-        <div class="feature-text"><strong>Audit log</strong> — rastreabilidade completa</div>
+        <div class="feature-icon">☁️</div>
+        <div class="feature-text"><strong>Buffer offline</strong> — dados preservados sem conexão</div>
       </div>
     </div>
   </div>
@@ -167,36 +186,30 @@ input:focus { border-color: #0ea5e9; box-shadow: 0 0 0 3px rgba(14,165,233,.12);
 <!-- Right login panel -->
 <div class="right-panel">
   <div class="card">
-    <div class="card-title">Bem-vindo de volta</div>
-    <div class="card-sub">Insira suas credenciais para acessar o sistema.</div>
+    <div class="card-title">Entrar na plataforma</div>
+    <div class="card-sub">Insira suas credenciais para continuar.</div>
 
     {% if error %}
-    <div class="error">⚠️ {{ error }}</div>
+    <div class="error-box">⚠ {{ error }}</div>
     {% endif %}
 
     <form method="POST" action="/login">
-      <label for="email">Email</label>
-      <div class="input-wrap">
-        <span class="input-icon">✉</span>
-        <input type="email" id="email" name="email" placeholder="seu@email.com"
-               autocomplete="username" required autofocus>
+      <div class="form-field">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email"
+               placeholder="seu@email.com" autocomplete="username" required autofocus>
       </div>
-
-      <label for="password">Senha</label>
-      <div class="input-wrap">
-        <span class="input-icon">🔑</span>
-        <input type="password" id="password" name="password" placeholder="••••••••"
-               autocomplete="current-password" required>
+      <div class="form-field">
+        <label for="password">Senha</label>
+        <input type="password" id="password" name="password"
+               placeholder="••••••••" autocomplete="current-password" required>
       </div>
-
-      <button type="submit" class="btn">
-        Entrar <span>→</span>
-      </button>
+      <button type="submit" class="btn">Continuar →</button>
     </form>
 
     <div class="mfa-note">
-      🔒 <strong>Autenticação em dois fatores ativada.</strong>
-      Após a senha, você será solicitado a inserir o código do seu autenticador (Google Authenticator / Authy).
+      🔒 <strong>Autenticação em dois fatores ativa.</strong>
+      Após a senha você será solicitado o código TOTP do seu autenticador.
     </div>
   </div>
 </div>

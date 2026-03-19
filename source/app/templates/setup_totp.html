@@ -4,153 +4,146 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Configurar MFA — VaccineTransport IoT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:      #0f0f0f;
+  --surface: #1c1c1c;
+  --surface2:#262626;
+  --border:  rgba(255,255,255,0.08);
+  --text:    #ededed;
+  --muted:   #888;
+  --accent:  #3ECF8E;
+  --accent-d:#2db67d;
+  --danger:  #f66060;
+}
 body {
-  font-family: 'Segoe UI', system-ui, sans-serif;
-  background: #0b1120;
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg); color: var(--text);
   min-height: 100vh;
-  display: flex; align-items: center; justify-content: center;
-  padding: 24px;
+  display: flex; align-items: center; justify-content: center; padding: 24px;
 }
 .card {
-  background: #111827;
-  border: 1px solid #1f2d44;
-  border-radius: 16px;
-  padding: 0;
-  width: 100%; max-width: 480px;
-  box-shadow: 0 32px 64px rgba(0,0,0,.6);
-  overflow: hidden;
+  width: 100%; max-width: 440px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; padding: 32px;
 }
-.card-top {
-  background: linear-gradient(135deg, #0ea5e9, #6366f1);
-  padding: 28px 32px;
-  display: flex; align-items: center; gap: 14px;
-}
-.card-top .icon {
+.card-icon {
   width: 48px; height: 48px;
-  background: rgba(255,255,255,.15);
+  background: rgba(62,207,142,.12); border: 1px solid rgba(62,207,142,.2);
   border-radius: 12px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 24px; flex-shrink: 0;
+  font-size: 22px; margin-bottom: 20px;
 }
-.card-top h2 { font-size: 1.15rem; font-weight: 700; color: #fff; }
-.card-top p  { font-size: .78rem; color: rgba(255,255,255,.7); margin-top: 3px; }
+.card-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 6px; }
+.card-sub   { font-size: .82rem; color: var(--muted); margin-bottom: 24px; line-height: 1.6; }
 
-.card-body { padding: 28px 32px; }
-
+.steps { display: flex; flex-direction: column; gap: 10px; margin-bottom: 22px; }
 .step {
-  display: flex; gap: 14px; align-items: flex-start;
-  margin-bottom: 20px;
+  display: flex; gap: 12px; align-items: flex-start;
+  padding: 12px; border-radius: 8px; background: var(--surface2);
+  border: 1px solid var(--border);
 }
 .step-num {
-  width: 26px; height: 26px;
-  background: rgba(14,165,233,.15); border: 1px solid rgba(14,165,233,.3);
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: .75rem; font-weight: 700; color: #38bdf8; flex-shrink: 0; margin-top: 1px;
+  width: 22px; height: 22px; flex-shrink: 0;
+  background: rgba(62,207,142,.15); border: 1px solid rgba(62,207,142,.25);
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: .68rem; font-weight: 700; color: var(--accent);
 }
-.step-content { flex: 1; }
-.step-content p { font-size: .83rem; color: #94a3b8; line-height: 1.6; }
-.step-content p strong { color: #e2e8f0; }
+.step-text { font-size: .8rem; color: var(--muted); line-height: 1.5; }
+.step-text strong { color: var(--text); }
 
 .qr-wrap {
-  background: #fff; border-radius: 10px; padding: 10px;
-  display: inline-block; margin: 10px 0;
+  background: #fff; border-radius: 10px;
+  padding: 12px; display: flex; justify-content: center;
+  margin: 18px 0;
 }
+.qr-wrap img { display: block; }
+
 .secret-box {
-  background: #0b1120; border: 1px solid #1f2d44; border-radius: 8px;
-  padding: 8px 12px; font-family: 'Courier New', monospace;
-  font-size: .82rem; color: #38bdf8; letter-spacing: .08em;
-  word-break: break-all; margin: 8px 0;
-  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px 14px;
+  font-family: monospace; font-size: .82rem; color: var(--muted);
+  word-break: break-all; margin-bottom: 20px; line-height: 1.7;
 }
-.secret-label { font-size: .7rem; color: #475569; margin-bottom: 4px; }
+.secret-box strong { color: var(--text); display: block; font-family: inherit; font-size: .68rem; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
 
-.divider { border: none; border-top: 1px solid #1f2d44; margin: 20px 0; }
-
-label { display: block; font-size: .78rem; color: #94a3b8; margin-bottom: 6px; font-weight: 500; }
-input[type=text] {
+.form-field label {
+  display: block; font-size: .72rem; font-weight: 500; color: var(--muted); margin-bottom: 6px;
+}
+.form-field input {
   width: 100%;
-  background: #0b1120; border: 1px solid #1f2d44; border-radius: 9px;
-  padding: .75rem; color: #f1f5f9;
-  font-size: 1.8rem; text-align: center;
-  letter-spacing: .4em; outline: none;
-  transition: border-color .2s, box-shadow .2s;
-  margin-bottom: 14px;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+  padding: .75rem 1rem; color: var(--text);
+  font-family: 'Inter', monospace; font-size: 1.4rem;
+  font-weight: 700; letter-spacing: .4em; text-align: center;
+  outline: none; transition: border-color .15s, box-shadow .15s;
 }
-input:focus { border-color: #0ea5e9; box-shadow: 0 0 0 3px rgba(14,165,233,.12); }
+.form-field input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(62,207,142,.12); }
+.form-field input::placeholder { font-size: .85rem; letter-spacing: normal; font-weight: 400; }
+
 .btn {
-  width: 100%; background: linear-gradient(135deg, #0ea5e9, #0284c7);
-  color: #fff; border: none; border-radius: 9px;
-  padding: .78rem; font-size: .9rem; font-weight: 600;
-  cursor: pointer; transition: opacity .2s;
+  width: 100%; margin-top: 14px; padding: .75rem;
+  background: var(--accent); color: #0f0f0f;
+  border: none; border-radius: 8px;
+  font-family: inherit; font-size: .88rem; font-weight: 700;
+  cursor: pointer; transition: background .15s, transform .1s;
 }
-.btn:hover { opacity: .9; }
-.error {
-  background: rgba(239,68,68,.08); border: 1px solid rgba(239,68,68,.25);
-  border-left: 3px solid #ef4444;
-  color: #fca5a5; border-radius: 8px;
-  padding: .65rem .9rem; font-size: .82rem; margin-bottom: 16px;
+.btn:hover { background: var(--accent-d); }
+.btn:active { transform: translateY(1px); }
+
+.error-box {
+  background: rgba(246,96,96,.08); border: 1px solid rgba(246,96,96,.2);
+  border-left: 3px solid var(--danger); color: #fca5a5; border-radius: 8px;
+  padding: .65rem .9rem; font-size: .8rem; margin-bottom: 16px;
+  display: flex; align-items: center; gap: 8px;
 }
 </style>
 </head>
 <body>
 <div class="card">
-  <div class="card-top">
-    <div class="icon">🔑</div>
-    <div>
-      <h2>Configurar Autenticador</h2>
-      <p>Proteja sua conta com um segundo fator de autenticação</p>
-    </div>
-  </div>
+  <div class="card-icon">🔑</div>
+  <div class="card-title">Configurar autenticação MFA</div>
+  <div class="card-sub">Configure o código de verificação em duas etapas para proteger sua conta.</div>
 
-  <div class="card-body">
-
-    {% if error %}
-    <div class="error">⚠️ {{ error }}</div>
-    {% endif %}
-
+  <div class="steps">
     <div class="step">
       <div class="step-num">1</div>
-      <div class="step-content">
-        <p>Instale o <strong>Google Authenticator</strong> ou <strong>Authy</strong> no seu smartphone (iOS ou Android).</p>
-      </div>
+      <div class="step-text">Instale <strong>Google Authenticator</strong> ou <strong>Authy</strong> no seu celular.</div>
     </div>
-
     <div class="step">
       <div class="step-num">2</div>
-      <div class="step-content">
-        <p>Abra o app, toque em <strong>+</strong> e escaneie o QR code abaixo:</p>
-        {% if qr_b64 %}
-        <div class="qr-wrap">
-          <img src="data:image/png;base64,{{ qr_b64 }}" width="170" height="170" alt="QR Code MFA">
-        </div>
-        {% endif %}
-        <div class="secret-label">Ou insira a chave manualmente:</div>
-        <div class="secret-box">
-          <span>{{ secret }}</span>
-        </div>
-      </div>
+      <div class="step-text">Escaneie o QR Code abaixo com o aplicativo.</div>
     </div>
-
     <div class="step">
       <div class="step-num">3</div>
-      <div class="step-content">
-        <p>Digite o código de <strong>6 dígitos</strong> gerado pelo app para confirmar a configuração.</p>
-      </div>
+      <div class="step-text">Digite o código de 6 dígitos gerado para confirmar a configuração.</div>
     </div>
-
-    <div class="divider"></div>
-
-    <form method="POST" action="/setup-totp">
-      <label for="code">Código de verificação</label>
-      <input type="text" id="code" name="code" maxlength="6"
-             placeholder="000000" autocomplete="one-time-code"
-             inputmode="numeric" pattern="[0-9]{6}" required autofocus>
-      <button type="submit" class="btn">Confirmar e Continuar →</button>
-    </form>
   </div>
+
+  <div class="qr-wrap">
+    <img src="data:image/png;base64,{{ qr_b64 }}" alt="QR Code TOTP" width="180" height="180">
+  </div>
+
+  <div class="secret-box">
+    <strong>Chave manual (se não conseguir escanear)</strong>
+    {{ secret }}
+  </div>
+
+  {% if error %}<div class="error-box">⚠ {{ error }}</div>{% endif %}
+
+  <form method="POST" action="/setup-totp">
+    <div class="form-field">
+      <label for="totp_code">Confirme com o código do app</label>
+      <input type="text" id="totp_code" name="code"
+             inputmode="numeric" pattern="[0-9]{6}" maxlength="6"
+             placeholder="000000" autocomplete="one-time-code" autofocus required>
+    </div>
+    <button type="submit" class="btn">Ativar autenticação →</button>
+  </form>
 </div>
 </body>
 </html>

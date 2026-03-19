@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <title>VaccineTransport — Dashboard</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -11,29 +14,38 @@
 /* ── Reset & Base ─────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
-  --bg:        #0b1120;
-  --surface:   #111827;
-  --surface2:  #1a2234;
-  --border:    #1f2d44;
-  --text:      #e2e8f0;
-  --muted:     #64748b;
-  --accent:    #0ea5e9;
-  --accent2:   #6366f1;
-  --danger:    #ef4444;
-  --warn:      #f59e0b;
-  --success:   #22c55e;
-  --sidebar-w: 220px;
+  --bg:        #0f0f0f;
+  --surface:   #1c1c1c;
+  --surface2:  #262626;
+  --surface3:  #2e2e2e;
+  --border:    rgba(255,255,255,0.08);
+  --border2:   rgba(255,255,255,0.14);
+  --text:      #ededed;
+  --muted:     #888;
+  --muted2:    #555;
+  --accent:    #3ECF8E;
+  --accent-d:  #2db67d;
+  --danger:    #f66060;
+  --warn:      #f0a500;
+  --info:      #60a5fa;
+  --sidebar-w: 230px;
 }
 body {
-  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
   background: var(--bg);
   color: var(--text);
   min-height: 100vh;
   display: flex;
-  font-size: 14px;
+  font-size: 13.5px;
+  line-height: 1.5;
 }
 
-/* ── Sidebar ──────────────────────────────────────────────── */
+/* ── Scrollbar ───────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 3px; }
+
+/* ── Sidebar ─────────────────────────────────────────────── */
 .sidebar {
   width: var(--sidebar-w);
   background: var(--surface);
@@ -45,1054 +57,881 @@ body {
   z-index: 100;
 }
 .sidebar-logo {
-  padding: 20px 18px 16px;
+  padding: 18px 16px 14px;
   border-bottom: 1px solid var(--border);
   display: flex; align-items: center; gap: 10px;
 }
-.sidebar-logo .icon {
-  width: 36px; height: 36px;
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
+.logo-mark {
+  width: 34px; height: 34px;
+  background: var(--accent);
   border-radius: 8px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 18px; flex-shrink: 0;
+  font-size: 17px; flex-shrink: 0;
 }
-.sidebar-logo h1 { font-size: .85rem; font-weight: 700; color: var(--text); line-height: 1.3; }
-.sidebar-logo span { font-size: .7rem; color: var(--muted); }
+.logo-text { font-size: .78rem; font-weight: 700; color: var(--text); line-height: 1.2; }
+.logo-text span { color: var(--muted); font-weight: 400; font-size: .68rem; display: block; }
 
-.sidebar-nav { padding: 12px 8px; flex: 1; }
-.nav-label { font-size: .65rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); padding: 8px 10px 4px; }
+.nav { flex: 1; padding: 10px 8px; overflow-y: auto; }
+.nav-section { margin-bottom: 4px; }
+.nav-label {
+  font-size: .65rem; font-weight: 600; color: var(--muted2);
+  text-transform: uppercase; letter-spacing: .08em;
+  padding: 10px 8px 4px;
+}
 .nav-item {
-  display: flex; align-items: center; gap: 10px;
-  padding: 9px 10px; border-radius: 7px;
+  display: flex; align-items: center; gap: 9px;
+  padding: 7px 10px; border-radius: 6px;
   color: var(--muted); font-size: .82rem; font-weight: 500;
-  cursor: pointer; transition: all .15s; text-decoration: none;
-  margin-bottom: 2px;
+  cursor: pointer; text-decoration: none;
+  transition: background .15s, color .15s;
+  position: relative;
 }
 .nav-item:hover { background: var(--surface2); color: var(--text); }
-.nav-item.active { background: rgba(14,165,233,.12); color: var(--accent); }
-.nav-item .ni { font-size: 15px; width: 18px; text-align: center; }
+.nav-item.active { background: rgba(62,207,142,.12); color: var(--accent); }
+.nav-item .nav-icon { font-size: 14px; width: 16px; text-align: center; flex-shrink: 0; }
+.nav-badge {
+  margin-left: auto;
+  background: var(--danger); color: #fff;
+  font-size: .6rem; font-weight: 700;
+  padding: 1px 5px; border-radius: 10px;
+  min-width: 16px; text-align: center;
+}
 
-.sidebar-footer {
-  padding: 12px 8px;
+.sidebar-user {
+  padding: 12px 14px;
   border-top: 1px solid var(--border);
 }
-.user-row {
-  display: flex; align-items: center; gap: 10px;
-  padding: 8px 10px; border-radius: 7px;
-}
+.user-info { display: flex; align-items: center; gap: 9px; margin-bottom: 8px; }
 .user-avatar {
-  width: 30px; height: 30px;
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
-  border-radius: 50%; display: flex; align-items: center; justify-content: center;
-  font-size: .8rem; font-weight: 700; color: #fff; flex-shrink: 0;
+  width: 28px; height: 28px;
+  background: var(--surface3); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; flex-shrink: 0; color: var(--muted);
 }
-.user-info { flex: 1; min-width: 0; }
-.user-name { font-size: .8rem; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.user-role { font-size: .68rem; color: var(--muted); }
-.logout-btn {
-  display: flex; align-items: center; justify-content: center; gap: 7px;
-  width: 100%; padding: 7px 10px; border-radius: 7px;
-  background: transparent; border: 1px solid var(--border);
-  color: var(--muted); font-size: .78rem; cursor: pointer;
-  text-decoration: none; transition: all .15s; margin-top: 6px;
+.user-name { font-size: .78rem; font-weight: 600; color: var(--text); }
+.user-role {
+  font-size: .62rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .06em; padding: 1px 6px; border-radius: 4px;
+  display: inline-block; margin-top: 1px;
 }
-.logout-btn:hover { border-color: var(--danger); color: var(--danger); }
+.role-admin  { background: rgba(62,207,142,.15); color: var(--accent); }
+.role-operator { background: var(--surface3); color: var(--muted); }
+.btn-logout {
+  width: 100%; padding: 6px 10px; border-radius: 6px;
+  border: 1px solid var(--border); background: transparent;
+  color: var(--muted); font-size: .78rem; font-family: inherit;
+  cursor: pointer; transition: all .15s;
+  display: flex; align-items: center; gap: 6px; justify-content: center;
+}
+.btn-logout:hover { border-color: var(--danger); color: var(--danger); background: rgba(246,96,96,.06); }
 
-/* ── Main content ─────────────────────────────────────────── */
-.main {
+/* ── Main layout ─────────────────────────────────────────── */
+.main-wrap {
   margin-left: var(--sidebar-w);
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
+  flex: 1; display: flex; flex-direction: column; min-height: 100vh;
 }
 
-/* ── Topbar ───────────────────────────────────────────────── */
+/* ── Topbar ──────────────────────────────────────────────── */
 .topbar {
+  height: 52px;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
-  padding: 12px 24px;
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex; align-items: center;
+  padding: 0 24px;
+  gap: 12px;
   position: sticky; top: 0; z-index: 50;
 }
-.topbar-title { font-size: 1rem; font-weight: 600; color: var(--text); }
-.topbar-title span { color: var(--muted); font-weight: 400; font-size: .85rem; margin-left: 6px; }
-.topbar-right { display: flex; align-items: center; gap: 12px; }
-.status-pill {
+.topbar-title {
+  font-size: .95rem; font-weight: 600; color: var(--text); flex: 1;
+}
+.mqtt-badge {
   display: flex; align-items: center; gap: 6px;
-  background: var(--surface2); border: 1px solid var(--border);
-  border-radius: 20px; padding: 4px 12px;
-  font-size: .75rem; color: var(--muted);
-}
-.dot {
-  width: 7px; height: 7px; border-radius: 50%;
-  background: var(--muted); flex-shrink: 0;
-}
-.dot.green  { background: var(--success); box-shadow: 0 0 6px var(--success); }
-.dot.red    { background: var(--danger);  box-shadow: 0 0 6px var(--danger); }
-.dot.pulse  { animation: pulse 2s infinite; }
-@keyframes pulse { 0%,100%{ opacity:1 } 50%{ opacity:.4 } }
-.last-msg { font-size: .72rem; color: var(--muted); }
-
-/* ── Content area ─────────────────────────────────────────── */
-.content { padding: 20px 24px; flex: 1; }
-
-/* ── Alarm banner ─────────────────────────────────────────── */
-#alarmPanel {
-  background: rgba(239,68,68,.08);
-  border: 1px solid rgba(239,68,68,.3);
-  border-left: 4px solid var(--danger);
-  border-radius: 10px;
-  padding: 14px 18px;
-  margin-bottom: 20px;
-  display: none;
-}
-#alarmPanel h3 { color: var(--danger); font-size: .9rem; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
-#alarmList { list-style: none; }
-#alarmList li {
-  font-size: .82rem; color: #fca5a5;
-  padding: 3px 0; border-bottom: 1px solid rgba(239,68,68,.1);
-}
-#alarmList li:last-child { border: none; }
-
-/* ── Stat cards ───────────────────────────────────────────── */
-.stats-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 20px; }
-.stat-card {
-  background: var(--surface);
+  padding: 4px 10px; border-radius: 6px;
   border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 16px 18px;
-  display: flex; align-items: center; gap: 14px;
-}
-.stat-icon {
-  width: 42px; height: 42px; border-radius: 10px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 20px; flex-shrink: 0;
-}
-.si-blue  { background: rgba(14,165,233,.12); }
-.si-green { background: rgba(34,197,94,.12); }
-.si-warn  { background: rgba(245,158,11,.12); }
-.si-red   { background: rgba(239,68,68,.12); }
-.stat-info { min-width: 0; }
-.stat-val { font-size: 1.5rem; font-weight: 700; color: var(--text); line-height: 1; }
-.stat-label { font-size: .72rem; color: var(--muted); margin-top: 4px; }
-
-/* ── Grid ─────────────────────────────────────────────────── */
-.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
-.grid-2-3 { display: grid; grid-template-columns: 2fr 3fr; gap: 16px; margin-bottom: 16px; }
-.card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  overflow: hidden;
-}
-.card-header {
-  padding: 14px 18px;
-  border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; justify-content: space-between;
-}
-.card-header h3 { font-size: .87rem; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 7px; }
-.card-header h3 .ci { font-size: 14px; }
-.card-body { padding: 16px 18px; }
-
-/* ── Trip selector ────────────────────────────────────────── */
-.select-wrap { position: relative; }
-select {
-  width: 100%;
+  font-size: .72rem; font-weight: 500; color: var(--muted);
   background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 9px 12px;
-  color: var(--text);
-  font-size: .82rem;
-  outline: none;
-  cursor: pointer;
-  appearance: none;
-  transition: border-color .2s;
 }
-select:focus { border-color: var(--accent); }
-.select-arrow {
-  position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
-  color: var(--muted); pointer-events: none; font-size: 10px;
+.mqtt-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--muted2);
+  transition: background .3s;
+}
+.mqtt-badge.online .mqtt-dot  { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+.mqtt-badge.online .mqtt-label { color: var(--accent); }
+.mqtt-badge.offline .mqtt-dot { background: var(--danger); }
+.mqtt-badge.offline .mqtt-label { color: var(--danger); }
+
+/* ── Content ─────────────────────────────────────────────── */
+.content { flex: 1; padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+
+/* ── Section ─────────────────────────────────────────────── */
+.section-title {
+  font-size: .7rem; font-weight: 600; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .08em;
+  margin-bottom: 10px;
+}
+
+/* ── Device cards ────────────────────────────────────────── */
+.device-grid { display: flex; gap: 10px; flex-wrap: wrap; }
+.device-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 14px 16px;
+  display: flex; align-items: center; gap: 12px;
+  min-width: 200px; transition: border-color .2s;
+}
+.device-card:hover { border-color: var(--border2); }
+.device-dot {
+  width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+}
+.device-dot.online  { background: var(--accent); box-shadow: 0 0 8px rgba(62,207,142,.4); }
+.device-dot.offline { background: var(--muted2); }
+.device-dot.pending { background: var(--warn); }
+.device-info .d-name  { font-size: .82rem; font-weight: 600; color: var(--text); }
+.device-info .d-serial { font-size: .7rem; color: var(--muted); font-family: monospace; }
+.device-info .d-seen  { font-size: .68rem; color: var(--muted2); margin-top: 1px; }
+.device-status-label {
+  margin-left: auto; font-size: .65rem; font-weight: 600;
+  padding: 2px 7px; border-radius: 4px;
+}
+.label-online  { background: rgba(62,207,142,.12); color: var(--accent); }
+.label-offline { background: var(--surface3); color: var(--muted); }
+.label-pending { background: rgba(240,165,0,.12); color: var(--warn); }
+
+/* ── Trip selector ───────────────────────────────────────── */
+.trip-row {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+}
+.trip-select-wrap { position: relative; }
+.trip-select-wrap select {
+  appearance: none;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 8px 36px 8px 12px;
+  color: var(--text); font-family: inherit; font-size: .82rem;
+  cursor: pointer; outline: none; min-width: 280px;
+  transition: border-color .15s;
+}
+.trip-select-wrap select:focus { border-color: var(--accent); }
+.trip-select-wrap::after {
+  content: '▾'; position: absolute; right: 12px; top: 50%;
+  transform: translateY(-50%); color: var(--muted); pointer-events: none; font-size: .75rem;
 }
 .trip-meta {
-  display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px;
+  display: flex; gap: 8px; flex-wrap: wrap;
 }
-.trip-badge {
-  background: var(--surface2); border: 1px solid var(--border);
-  border-radius: 6px; padding: 4px 10px;
-  font-size: .74rem; color: var(--muted);
+.trip-tag {
+  display: flex; align-items: center; gap: 5px;
+  padding: 4px 9px; border-radius: 6px;
+  background: var(--surface); border: 1px solid var(--border);
+  font-size: .72rem; color: var(--muted);
 }
-.trip-badge span { color: var(--text); font-weight: 600; }
+.trip-tag span { color: var(--text); font-weight: 500; }
+.trip-tag-active { border-color: rgba(62,207,142,.25); }
+.trip-tag-active span { color: var(--accent); }
 
-/* ── Device list ──────────────────────────────────────────── */
-#deviceList { display: flex; flex-direction: column; gap: 8px; }
-.device-card {
+/* ── Viz row (Chart + Map) ───────────────────────────────── */
+.viz-row {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+}
+@media (max-width: 960px) { .viz-row { grid-template-columns: 1fr; } }
+
+.panel {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; overflow: hidden;
+}
+.panel-header {
+  padding: 14px 18px 12px;
+  border-bottom: 1px solid var(--border);
   display: flex; align-items: center; justify-content: space-between;
-  background: var(--surface2); border: 1px solid var(--border);
-  border-radius: 8px; padding: 9px 14px;
 }
-.device-name { font-size: .82rem; font-weight: 600; color: var(--text); }
-.device-time { font-size: .7rem; color: var(--muted); margin-top: 2px; }
-.badge {
-  padding: 3px 10px; border-radius: 12px;
-  font-size: .7rem; font-weight: 700; letter-spacing: .03em;
-}
-.badge-green  { background: rgba(34,197,94,.15);  color: #4ade80; border: 1px solid rgba(34,197,94,.2); }
-.badge-yellow { background: rgba(245,158,11,.15); color: #fbbf24; border: 1px solid rgba(245,158,11,.2); }
-.badge-red    { background: rgba(239,68,68,.15);  color: #f87171; border: 1px solid rgba(239,68,68,.2); }
-.badge-gray   { background: rgba(100,116,139,.15);color: #94a3b8; border: 1px solid rgba(100,116,139,.2); }
+.panel-header h3 { font-size: .82rem; font-weight: 600; color: var(--text); }
+.panel-header .panel-sub { font-size: .7rem; color: var(--muted); }
+.panel-body { padding: 16px; }
+.panel-body-map { height: 340px; }
 
-/* ── Recent readings table ────────────────────────────────── */
-.readings-table { width: 100%; border-collapse: collapse; }
-.readings-table th {
-  text-align: left; font-size: .7rem; font-weight: 600;
-  text-transform: uppercase; letter-spacing: .06em;
-  color: var(--muted); padding: 0 10px 10px; border-bottom: 1px solid var(--border);
+#map { height: 100%; border-radius: 0; }
+
+.chart-wrap { position: relative; height: 280px; }
+
+/* ── Empty state ─────────────────────────────────────────── */
+.empty-state {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 8px; padding: 40px 0;
+  color: var(--muted); font-size: .82rem;
 }
-.readings-table td {
-  padding: 9px 10px; font-size: .8rem; color: var(--text);
+.empty-icon { font-size: 2rem; opacity: .4; }
+
+/* ── Table ───────────────────────────────────────────────── */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: .8rem; }
+th {
+  font-size: .65rem; font-weight: 600; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .06em;
+  padding: 8px 12px; text-align: left;
   border-bottom: 1px solid var(--border);
 }
-.readings-table tr:last-child td { border-bottom: none; }
-.readings-table tr.alarm-row td { color: #fca5a5; }
-.readings-table tr:hover td { background: var(--surface2); }
-.temp-val { font-weight: 700; }
-.temp-alarm { color: var(--danger) !important; }
-.warn-icon { font-size: 11px; margin-left: 4px; }
+td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text); }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--surface2); }
+.tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: .65rem; font-weight: 600; padding: 2px 7px; border-radius: 4px;
+}
+.tag-ok   { background: rgba(62,207,142,.12); color: var(--accent); }
+.tag-warn { background: rgba(240,165,0,.12);   color: var(--warn); }
+.tag-err  { background: rgba(246,96,96,.12);   color: var(--danger); }
 
-/* ── Map ──────────────────────────────────────────────────── */
-#map { height: 300px; border-radius: 0; }
-.map-placeholder {
-  height: 300px; display: flex; align-items: center; justify-content: center;
-  color: var(--muted); font-size: .85rem; background: var(--surface2);
-}
+/* ── Admin ───────────────────────────────────────────────── */
+.admin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 880px) { .admin-grid { grid-template-columns: 1fr; } }
 
-/* ── Charts ───────────────────────────────────────────────── */
-.chart-wrap { padding: 8px 0; }
-
-/* ── Scrollbar ────────────────────────────────────────────── */
-::-webkit-scrollbar { width: 5px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
-
-/* ── Admin panel ──────────────────────────────────────────── */
-#adminPanel { display: none; }
-.section-title {
-  font-size: .9rem; font-weight: 700; color: var(--text);
-  margin: 20px 0 12px; display: flex; align-items: center; gap: 8px;
-}
-.section-title .stag {
-  font-size: .68rem; padding: 2px 8px; border-radius: 10px;
-  background: rgba(245,158,11,.15); color: #f59e0b;
-  border: 1px solid rgba(245,158,11,.2); font-weight: 600;
-}
-.admin-table { width:100%; border-collapse:collapse; }
-.admin-table th {
-  text-align:left; font-size:.68rem; font-weight:700;
-  text-transform:uppercase; letter-spacing:.06em;
-  color:var(--muted); padding:0 10px 10px; border-bottom:1px solid var(--border);
-}
-.admin-table td {
-  padding:10px; font-size:.8rem; color:var(--text);
-  border-bottom:1px solid var(--border); vertical-align:middle;
-}
-.admin-table tr:last-child td { border:none; }
-.admin-table tr:hover td { background:var(--surface2); }
+/* ── Buttons ─────────────────────────────────────────────── */
 .btn {
-  display:inline-flex; align-items:center; gap:5px;
-  padding:6px 14px; border-radius:7px; font-size:.78rem;
-  font-weight:600; cursor:pointer; border:none; transition:all .15s;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 14px; border-radius: 7px;
+  font-family: inherit; font-size: .8rem; font-weight: 600;
+  cursor: pointer; border: none; transition: all .15s;
 }
-.btn-primary { background:var(--accent); color:#fff; }
-.btn-primary:hover { background:#0284c7; }
-.btn-success { background:rgba(34,197,94,.15); color:#4ade80; border:1px solid rgba(34,197,94,.25); }
-.btn-success:hover { background:rgba(34,197,94,.25); }
-.btn-danger  { background:rgba(239,68,68,.15); color:#f87171; border:1px solid rgba(239,68,68,.25); }
-.btn-danger:hover  { background:rgba(239,68,68,.25); }
-.btn-ghost  { background:transparent; color:var(--muted); border:1px solid var(--border); }
-.btn-ghost:hover { border-color:var(--accent); color:var(--accent); }
-.pending-card {
-  display:flex; align-items:center; justify-content:space-between;
-  background:rgba(245,158,11,.06); border:1px solid rgba(245,158,11,.2);
-  border-radius:8px; padding:12px 16px; margin-bottom:8px;
-}
-.pending-card .serial { font-weight:700; color:var(--text); font-size:.85rem; }
-.pending-card .meta   { font-size:.72rem; color:var(--muted); margin-top:2px; }
+.btn-primary { background: var(--accent); color: #0f0f0f; }
+.btn-primary:hover { background: var(--accent-d); }
+.btn-ghost { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+.btn-ghost:hover { border-color: var(--border2); background: var(--surface3); }
+.btn-danger { background: rgba(246,96,96,.12); color: var(--danger); border: 1px solid rgba(246,96,96,.2); }
+.btn-danger:hover { background: rgba(246,96,96,.2); }
+.btn-sm { padding: 4px 10px; font-size: .72rem; }
 
-/* ── Modal ────────────────────────────────────────────────── */
+/* ── Modal ───────────────────────────────────────────────── */
 .modal-overlay {
-  position:fixed; inset:0; background:rgba(0,0,0,.7);
-  display:flex; align-items:center; justify-content:center;
-  z-index:1000;
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.75); backdrop-filter: blur(4px);
+  z-index: 200; align-items: center; justify-content: center;
 }
+.modal-overlay.open { display: flex; }
 .modal {
-  background:var(--surface); border:1px solid var(--border);
-  border-radius:14px; padding:28px; width:440px; max-width:95vw;
+  background: var(--surface); border: 1px solid var(--border2);
+  border-radius: 14px; padding: 24px; width: 100%; max-width: 420px;
+  box-shadow: 0 24px 80px rgba(0,0,0,.6);
 }
-.modal h3 { font-size:1rem; font-weight:700; margin-bottom:18px; display:flex; align-items:center; gap:8px; }
-.form-group { margin-bottom:14px; }
-.form-group label { display:block; font-size:.78rem; color:var(--muted); margin-bottom:5px; font-weight:600; }
-.form-group input, .form-group select {
-  width:100%; background:var(--surface2); border:1px solid var(--border);
-  border-radius:8px; padding:9px 12px; color:var(--text);
-  font-size:.84rem; outline:none;
+.modal h3 { font-size: .95rem; font-weight: 700; margin-bottom: 4px; }
+.modal .modal-sub { font-size: .78rem; color: var(--muted); margin-bottom: 18px; }
+.form-field { margin-bottom: 14px; }
+.form-field label { display: block; font-size: .72rem; font-weight: 500; color: var(--muted); margin-bottom: 5px; }
+.form-field input, .form-field select {
+  width: 100%; background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 7px; padding: 8px 11px;
+  color: var(--text); font-family: inherit; font-size: .82rem; outline: none;
+  transition: border-color .15s;
 }
-.form-group input:focus, .form-group select:focus { border-color:var(--accent); }
-.modal-footer { display:flex; gap:8px; justify-content:flex-end; margin-top:20px; }
-.badge-pending { background:rgba(245,158,11,.15); color:#fbbf24; border:1px solid rgba(245,158,11,.2); }
-.badge-admin   { background:rgba(99,102,241,.15); color:#a5b4fc; border:1px solid rgba(99,102,241,.2); }
+.form-field input:focus, .form-field select:focus { border-color: var(--accent); }
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+
+/* ── Pending list ────────────────────────────────────────── */
+.pending-list { display: flex; flex-direction: column; gap: 8px; }
+.pending-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: 8px;
+  background: var(--surface2); border: 1px solid var(--border);
+}
+.pending-item .pi-name { flex: 1; font-size: .8rem; font-weight: 500; }
+.pending-item .pi-id   { font-size: .68rem; color: var(--muted); font-family: monospace; }
 </style>
 </head>
 <body>
 
-<!-- ── SIDEBAR ─────────────────────────────────────────────── -->
+<!-- ══ SIDEBAR ══════════════════════════════════════════════ -->
 <aside class="sidebar">
   <div class="sidebar-logo">
-    <div class="icon">💉</div>
+    <div class="logo-mark">💉</div>
     <div>
-      <h1>VaccineTransport</h1>
-      <span>Sistema IoT Seguro</span>
+      <div class="logo-text">VaccineTransport<span>IoT Monitoring</span></div>
     </div>
   </div>
 
-  <nav class="sidebar-nav">
-    <div class="nav-label">Monitoramento</div>
-    <a class="nav-item active" href="#">
-      <span class="ni">📊</span> Dashboard
-    </a>
-    <a class="nav-item" href="#" onclick="scrollTo(0,0)">
-      <span class="ni">🗺️</span> Mapa de Rota
-    </a>
+  <nav class="nav">
+    <div class="nav-section">
+      <div class="nav-label">Principal</div>
+      <a class="nav-item active" onclick="showSection('dashboard')">
+        <span class="nav-icon">⬡</span> Dashboard
+      </a>
+      {% if user_role == 'admin' %}
+      <a class="nav-item" onclick="showSection('admin')">
+        <span class="nav-icon">⚙</span> Administração
+        <span class="nav-badge" id="pendingBadge" style="display:none">0</span>
+      </a>
+      {% endif %}
+    </div>
 
-    <div class="nav-label" style="margin-top:8px">Sistema</div>
-    <a class="nav-item" href="/api/status" target="_blank">
-      <span class="ni">⚙️</span> Status API
-    </a>
-    {% if user_role == 'admin' %}
-    <div class="nav-label" style="margin-top:8px">Administração</div>
-    <a class="nav-item" href="#adminPanel" onclick="showAdminPanel()">
-      <span class="ni">🔌</span> Dispositivos
-      <span id="pendingBadge" style="margin-left:auto;background:#f59e0b;color:#000;border-radius:10px;padding:1px 7px;font-size:.65rem;font-weight:700;display:none">0</span>
-    </a>
-    <a class="nav-item" href="#adminPanel" onclick="showAdminPanel()">
-      <span class="ni">🚚</span> Viagens
-    </a>
-    <a class="nav-item" href="/api/audit" target="_blank">
-      <span class="ni">📋</span> Audit Log
-    </a>
-    {% endif %}
-    <div class="nav-label" style="margin-top:8px">Relatórios</div>
-    <a class="nav-item" href="#" onclick="openTripReadingsMenu(event)">
-      <span class="ni">📊</span> Registros de Viagem
-    </a>
+    <div class="nav-section">
+      <div class="nav-label">Sistema</div>
+      <a class="nav-item" href="#" target="_blank" id="navReadings"
+         onclick="if(!currentTripId){alert('Selecione uma viagem primeiro.');return false;}this.href='/trips/'+currentTripId+'/readings';">
+        <span class="nav-icon">📋</span> Ver Registros
+      </a>
+      {% if user_role == 'admin' %}
+      <a class="nav-item" href="/api/audit" target="_blank">
+        <span class="nav-icon">🔍</span> Audit Log
+      </a>
+      {% endif %}
+    </div>
   </nav>
 
-  <div class="sidebar-footer">
-    <div class="user-row">
-      <div class="user-avatar">{{ user_name[0]|upper }}</div>
-      <div class="user-info">
+  <div class="sidebar-user">
+    <div class="user-info">
+      <div class="user-avatar">👤</div>
+      <div>
         <div class="user-name">{{ user_name }}</div>
-        <div class="user-role">
-          {% if user_role == 'admin' %}
-            <span style="color:#f59e0b;font-weight:700">● Admin</span>
-          {% else %}
-            <span style="color:#64748b">● Operador</span>
-          {% endif %}
-        </div>
+        <span class="user-role {{ 'role-admin' if user_role == 'admin' else 'role-operator' }}">
+          {{ user_role }}
+        </span>
       </div>
     </div>
-    <a href="/logout" class="logout-btn">
-      <span>⎋</span> Sair
-    </a>
+    <a href="/logout" class="btn-logout">↩ Sair</a>
   </div>
 </aside>
 
-<!-- ── MAIN ────────────────────────────────────────────────── -->
-<div class="main">
+<!-- ══ MAIN ═════════════════════════════════════════════════ -->
+<div class="main-wrap">
 
   <!-- Topbar -->
   <header class="topbar">
-    <div>
-      <span class="topbar-title">Dashboard <span>/ Monitoramento em Tempo Real</span></span>
-    </div>
-    <div class="topbar-right">
-      <div class="status-pill">
-        <div class="dot" id="brokerDot"></div>
-        <span id="brokerLabel">Broker MQTT</span>
-        <span id="brokerBadge" class="badge badge-gray" style="margin-left:4px">—</span>
-      </div>
-      <span class="last-msg" id="lastMsg">—</span>
+    <div class="topbar-title" id="topbarTitle">Dashboard</div>
+    <div class="mqtt-badge offline" id="mqttBadge">
+      <div class="mqtt-dot"></div>
+      <span class="mqtt-label">Broker MQTT</span>
     </div>
   </header>
 
   <!-- Content -->
-  <div class="content">
+  <main class="content">
 
-    <!-- Alarm banner -->
-    <div id="alarmPanel">
-      <h3><span>🚨</span> Violações de Temperatura Detectadas</h3>
-      <ul id="alarmList"></ul>
-    </div>
+    <!-- ── Dashboard Section ──────────────────────────────── -->
+    <div id="sectionDashboard">
 
-    <!-- Stat cards -->
-    <div class="stats-row">
-      <div class="stat-card">
-        <div class="stat-icon si-blue">🌡️</div>
-        <div class="stat-info">
-          <div class="stat-val" id="statTemp">—</div>
-          <div class="stat-label">Última Temperatura</div>
+      <!-- 1. Device Status -->
+      <div>
+        <div class="section-title">Status dos Dispositivos</div>
+        <div class="device-grid" id="deviceGrid">
+          <div class="empty-state"><div class="empty-icon">📡</div>Carregando...</div>
         </div>
       </div>
-      <div class="stat-card">
-        <div class="stat-icon si-green">💧</div>
-        <div class="stat-info">
-          <div class="stat-val" id="statHum">—</div>
-          <div class="stat-label">Última Umidade</div>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon si-green">📡</div>
-        <div class="stat-info">
-          <div class="stat-val" id="statDevices">—</div>
-          <div class="stat-label">Dispositivos Online</div>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon si-red">⚠️</div>
-        <div class="stat-info">
-          <div class="stat-val" id="statAlarms">—</div>
-          <div class="stat-label">Alarmes Ativos</div>
-        </div>
-      </div>
-    </div>
 
-    <!-- Trip + Devices -->
-    <div class="grid-2" style="margin-bottom:16px">
-      <div class="card">
-        <div class="card-header">
-          <h3><span class="ci">🚚</span> Viagem Selecionada</h3>
-        </div>
-        <div class="card-body">
-          <div class="select-wrap">
-            <select id="tripSelect"></select>
-            <span class="select-arrow">▼</span>
+      <!-- 2. Trip Selector -->
+      <div style="margin-top:20px">
+        <div class="section-title">Viagem</div>
+        <div class="trip-row">
+          <div class="trip-select-wrap">
+            <select id="tripSelect" onchange="onTripChange()">
+              <option value="">Selecione uma viagem...</option>
+            </select>
           </div>
           <div class="trip-meta" id="tripMeta"></div>
         </div>
       </div>
 
-      <div class="card">
-        <div class="card-header">
-          <h3><span class="ci">📡</span> Status dos Dispositivos</h3>
+      <!-- 3. Chart + Map -->
+      <div class="viz-row" style="margin-top:20px">
+        <!-- Temperature Chart -->
+        <div class="panel">
+          <div class="panel-header">
+            <h3>Temperatura</h3>
+            <span class="panel-sub" id="chartSub">Selecione uma viagem</span>
+          </div>
+          <div class="panel-body">
+            <div class="chart-wrap">
+              <canvas id="tempChart"></canvas>
+            </div>
+          </div>
         </div>
-        <div class="card-body">
-          <div id="deviceList"><span style="color:var(--muted);font-size:.82rem">Carregando...</span></div>
-        </div>
-      </div>
-    </div>
 
-    <!-- Map + Recent readings -->
-    <div class="grid-2-3" style="margin-bottom:16px">
-      <div class="card">
-        <div class="card-header">
-          <h3><span class="ci">🗺️</span> Mapa da Rota</h3>
+        <!-- Map -->
+        <div class="panel">
+          <div class="panel-header">
+            <h3>Localização GPS</h3>
+            <span class="panel-sub" id="mapSub">—</span>
+          </div>
+          <div class="panel-body-map">
+            <div id="map"></div>
+          </div>
         </div>
-        <div id="map"></div>
       </div>
 
-      <div class="card">
-        <div class="card-header">
-          <h3><span class="ci">📋</span> Últimas Leituras</h3>
-        </div>
-        <div class="card-body" style="padding: 0 18px 16px; overflow-x:auto">
-          <table class="readings-table" id="recent">
-            <thead>
-              <tr>
-                <th>Horário</th>
-                <th>Temp.</th>
-                <th>Umidade</th>
-                <th>GPS</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody id="recentBody"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
+    </div><!-- /sectionDashboard -->
 
-    <!-- Charts -->
-    <div class="grid-2">
-      <div class="card">
-        <div class="card-header">
-          <h3><span class="ci">📈</span> Temperatura (°C)</h3>
-          <span id="tempRange" style="font-size:.72rem;color:var(--muted)"></span>
-        </div>
-        <div class="card-body chart-wrap">
-          <canvas id="chartTemp" height="120"></canvas>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-header">
-          <h3><span class="ci">💧</span> Umidade (%)</h3>
-        </div>
-        <div class="card-body chart-wrap">
-          <canvas id="chartHum" height="120"></canvas>
-        </div>
-      </div>
-    </div>
-
+    <!-- ── Admin Section ──────────────────────────────────── -->
     {% if user_role == 'admin' %}
-    <!-- ── ADMIN PANEL ───────────────────────────────────────── -->
-    <div id="adminPanel">
+    <div id="sectionAdmin" style="display:none">
+      <div class="admin-grid">
 
-      <div class="section-title">
-        🔌 Dispositivos Descobertos <span class="stag">ADMIN</span>
-      </div>
-      <div class="card" style="margin-bottom:16px">
-        <div class="card-header">
-          <h3><span class="ci">📡</span> Aguardando Registro</h3>
-          <span id="pendingCountLabel" style="font-size:.75rem;color:var(--muted)">Carregando...</span>
+        <!-- Pending Devices -->
+        <div class="panel">
+          <div class="panel-header">
+            <h3>Dispositivos Pendentes</h3>
+            <button class="btn btn-ghost btn-sm" onclick="refreshAdminPending()">↻ Atualizar</button>
+          </div>
+          <div class="panel-body">
+            <div class="pending-list" id="pendingList">
+              <div class="empty-state"><div class="empty-icon">✓</div>Nenhum pendente</div>
+            </div>
+          </div>
         </div>
-        <div class="card-body" id="pendingDeviceList">
-          <span style="color:var(--muted);font-size:.82rem">Nenhum dispositivo pendente.</span>
-        </div>
-      </div>
 
-      <div class="section-title">
-        🚚 Gestão de Viagens <span class="stag">ADMIN</span>
-      </div>
-      <div class="card" style="margin-bottom:16px">
-        <div class="card-header">
-          <h3><span class="ci">📋</span> Viagens Cadastradas</h3>
-          <button class="btn btn-primary" onclick="showNewTripModal()">+ Nova Viagem</button>
+        <!-- Trip Management -->
+        <div class="panel">
+          <div class="panel-header">
+            <h3>Viagens</h3>
+            <button class="btn btn-primary btn-sm" onclick="showNewTripModal()">+ Nova Viagem</button>
+          </div>
+          <div class="panel-body" style="padding:0">
+            <div class="table-wrap">
+              <table id="tripsTable">
+                <thead>
+                  <tr>
+                    <th>ID</th><th>Vacina</th><th>Origem → Destino</th><th>Status</th><th></th>
+                  </tr>
+                </thead>
+                <tbody id="tripsBody">
+                  <tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">Carregando...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
-        <div class="card-body" style="padding:0 18px 16px;overflow-x:auto">
-          <table class="admin-table" id="adminTripsTable">
-            <thead>
-              <tr>
-                <th>#</th><th>Lote / Vacina</th><th>Rota</th>
-                <th>Dispositivo</th><th>Status</th><th>Ações</th>
-              </tr>
-            </thead>
-            <tbody id="adminTripsBody"></tbody>
-          </table>
-        </div>
-      </div>
 
-    </div><!-- /adminPanel -->
-
-    <!-- Modal: Registrar Dispositivo -->
-    <div class="modal-overlay" id="modalRegister" style="display:none">
-      <div class="modal">
-        <h3>🔌 Registrar Dispositivo</h3>
-        <input type="hidden" id="regDeviceId">
-        <div class="form-group">
-          <label>ID do dispositivo (auto-descoberto)</label>
-          <input type="text" id="regDeviceSerial" disabled style="opacity:.6">
-        </div>
-        <div class="form-group">
-          <label>Nome amigável *</label>
-          <input type="text" id="regDeviceName" placeholder="Ex: ESP32 Caminhão #1">
-        </div>
-        <div class="form-group">
-          <label>Atribuir à viagem *</label>
-          <select id="regTripSelect"></select>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-ghost" onclick="closeModal('modalRegister')">Cancelar</button>
-          <button class="btn btn-success" onclick="confirmRegister()">✔ Registrar</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Modal: Nova Viagem -->
-    <div class="modal-overlay" id="modalTrip" style="display:none">
-      <div class="modal">
-        <h3>🚚 Nova Viagem</h3>
-        <div class="form-group">
-          <label>Lote de vacina *</label>
-          <select id="tripBatchSelect"></select>
-        </div>
-        <div class="form-group">
-          <label>Origem *</label>
-          <input type="text" id="tripOrigin" placeholder="Ex: Aeroporto Guarulhos">
-        </div>
-        <div class="form-group">
-          <label>Destino *</label>
-          <input type="text" id="tripDestination" placeholder="Ex: Hospital das Clínicas">
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-ghost" onclick="closeModal('modalTrip')">Cancelar</button>
-          <button class="btn btn-primary" onclick="confirmNewTrip()">✔ Criar Viagem</button>
-        </div>
       </div>
     </div>
     {% endif %}
 
-  </div><!-- /content -->
-</div><!-- /main -->
+  </main>
+</div>
 
+<!-- ══ MODALS ════════════════════════════════════════════════ -->
+<!-- Register Device Modal -->
+<div class="modal-overlay" id="modalRegister">
+  <div class="modal">
+    <h3>Registrar Dispositivo</h3>
+    <p class="modal-sub" id="modalDeviceId">—</p>
+    <div class="form-field">
+      <label>Nome do dispositivo</label>
+      <input type="text" id="regName" placeholder="Ex: Sensor Câmara Fria 01">
+    </div>
+    <div class="form-field">
+      <label>Vincular à viagem</label>
+      <select id="regTrip"></select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modalRegister')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmRegister()">Registrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- New Trip Modal -->
+<div class="modal-overlay" id="modalNewTrip">
+  <div class="modal">
+    <h3>Nova Viagem</h3>
+    <p class="modal-sub">Crie uma nova viagem e associe um lote de vacinas.</p>
+    <div class="form-field">
+      <label>Lote de vacina</label>
+      <select id="newTripBatch"></select>
+    </div>
+    <div class="form-field">
+      <label>Origem</label>
+      <input type="text" id="newTripOrigin" placeholder="Ex: São Paulo">
+    </div>
+    <div class="form-field">
+      <label>Destino</label>
+      <input type="text" id="newTripDest" placeholder="Ex: Campinas">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modalNewTrip')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmNewTrip()">Criar Viagem</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SCRIPT ════════════════════════════════════════════════ -->
 <script>
-// ---- Helpers ----
-async function fetchJSON(url) {
-    const res = await fetch(url);
-    return res.json();
+// ── State ────────────────────────────────────────────────────
+let map, routeLayer, markersLayer;
+let tempChart;
+let currentTripId = null;
+let pendingDeviceSerial = null;
+let activeTripId = {{ active_trip_id or 'null' }};
+
+// ── Section toggle ────────────────────────────────────────────
+function showSection(name) {
+  document.getElementById('sectionDashboard').style.display = name === 'dashboard' ? '' : 'none';
+  {% if user_role == 'admin' %}
+  document.getElementById('sectionAdmin').style.display = name === 'admin' ? '' : 'none';
+  if (name === 'admin') { refreshAdminPending(); refreshAdminTrips(); }
+  {% endif %}
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  document.getElementById('topbarTitle').textContent = name === 'admin' ? 'Administração' : 'Dashboard';
 }
 
-function timeAgo(isoStr) {
-    if (!isoStr) return "—";
-    const diff = Math.round((Date.now() - new Date(isoStr + "Z")) / 1000);
-    if (diff < 5)   return "agora";
-    if (diff < 60)  return diff + "s atrás";
-    if (diff < 3600) return Math.floor(diff/60) + "min atrás";
-    return Math.floor(diff/3600) + "h atrás";
+// ── Map init ──────────────────────────────────────────────────
+function initMap() {
+  map = L.map('map', { zoomControl: true }).setView([-23.5, -46.6], 11);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '© OpenStreetMap © CARTO', maxZoom: 19
+  }).addTo(map);
+  routeLayer   = L.layerGroup().addTo(map);
+  markersLayer = L.layerGroup().addTo(map);
 }
 
-// ---- Chart defaults (dark theme) ----
-Chart.defaults.color = '#64748b';
-Chart.defaults.borderColor = '#1f2d44';
+// ── MQTT Status ───────────────────────────────────────────────
+function refreshStatus() {
+  fetch('/api/status').then(r => r.json()).then(d => {
+    const badge = document.getElementById('mqttBadge');
+    const ok = d.broker_connected;
+    badge.className = 'mqtt-badge ' + (ok ? 'online' : 'offline');
+    badge.querySelector('.mqtt-label').textContent = ok ? 'Broker Online' : 'Broker Offline';
+  }).catch(() => {});
+}
 
-function makeChart(id, label, color) {
-    return new Chart(document.getElementById(id), {
+// ── Devices ───────────────────────────────────────────────────
+function refreshDevices() {
+  fetch('/api/devices').then(r => r.json()).then(data => {
+    const grid = document.getElementById('deviceGrid');
+    if (!data.length) {
+      grid.innerHTML = '<div class="empty-state"><div class="empty-icon">📡</div>Nenhum dispositivo registrado</div>';
+      return;
+    }
+    grid.innerHTML = data.map(d => {
+      const isOnline  = d.is_online;
+      const isPending = d.registration_status === 'pending';
+      const dotClass  = isPending ? 'pending' : (isOnline ? 'online' : 'offline');
+      const lblClass  = isPending ? 'label-pending' : (isOnline ? 'label-online' : 'label-offline');
+      const lblText   = isPending ? 'Pendente' : (isOnline ? 'Online' : 'Offline');
+      const seenText  = d.last_seen ? 'Visto ' + timeAgo(d.last_seen) : 'Nunca visto';
+      return `<div class="device-card">
+        <div class="device-dot ${dotClass}"></div>
+        <div class="device-info">
+          <div class="d-name">${d.name || d.serial_number}</div>
+          <div class="d-serial">${d.serial_number}</div>
+          <div class="d-seen">${seenText}</div>
+        </div>
+        <span class="device-status-label ${lblClass}">${lblText}</span>
+      </div>`;
+    }).join('');
+  }).catch(() => {});
+}
+
+// ── Trips selector ────────────────────────────────────────────
+function refreshTrips() {
+  fetch('/api/trips').then(r => r.json()).then(data => {
+    const sel = document.getElementById('tripSelect');
+    const current = sel.value;
+    sel.innerHTML = '<option value="">Selecione uma viagem...</option>' +
+      data.map(t => {
+        const label = `#${t.trip_id} — ${t.vaccine_name} (${t.origin} → ${t.destination})`;
+        return `<option value="${t.trip_id}">${label}</option>`;
+      }).join('');
+
+    // auto-select: current selection > activeTripId > first
+    if (current && data.find(t => t.trip_id == current)) {
+      sel.value = current;
+    } else if (activeTripId && data.find(t => t.trip_id == activeTripId)) {
+      sel.value = activeTripId;
+    } else if (data.length) {
+      sel.value = data[0].trip_id;
+    }
+
+    if (sel.value) loadTripData(parseInt(sel.value), data);
+  }).catch(() => {});
+}
+
+function onTripChange() {
+  const id = parseInt(document.getElementById('tripSelect').value);
+  if (!id) { clearViz(); return; }
+  fetch('/api/trips').then(r => r.json()).then(data => loadTripData(id, data));
+}
+
+function loadTripData(tripId, trips) {
+  currentTripId = tripId;
+  // Update nav link
+  const navR = document.getElementById('navReadings');
+  if (navR) navR.href = `/trips/${tripId}/readings`;
+
+  // Trip meta tags
+  const trip = trips.find(t => t.trip_id == tripId);
+  const meta = document.getElementById('tripMeta');
+  if (trip) {
+    const isActive = !trip.end_time;
+    meta.innerHTML = `
+      <div class="trip-tag ${isActive ? 'trip-tag-active' : ''}">
+        Status: <span>${isActive ? 'Ativa' : 'Encerrada'}</span>
+      </div>
+      <div class="trip-tag">Vacina: <span>${trip.vaccine_name}</span></div>
+      <div class="trip-tag">Lote: <span>${trip.batch_code}</span></div>
+      <div class="trip-tag">${trip.origin} → <span>${trip.destination}</span></div>
+    `;
+  }
+
+  // Load readings for this trip
+  refreshChartAndMap(tripId);
+}
+
+// ── Chart + Map ───────────────────────────────────────────────
+function clearViz() {
+  document.getElementById('chartSub').textContent = 'Selecione uma viagem';
+  document.getElementById('mapSub').textContent = '—';
+  if (tempChart) { tempChart.data.labels = []; tempChart.data.datasets[0].data = []; tempChart.update(); }
+  if (routeLayer) routeLayer.clearLayers();
+  if (markersLayer) markersLayer.clearLayers();
+}
+
+function refreshChartAndMap(tripId) {
+  fetch(`/api/readings/${tripId}`).then(r => r.json()).then(data => {
+    const sub = `${data.length} registros`;
+    document.getElementById('chartSub').textContent = sub;
+    document.getElementById('mapSub').textContent = sub;
+
+    // ── Chart ──
+    const labels = data.map(r => {
+      const d = new Date(r.timestamp);
+      return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    });
+    const temps = data.map(r => r.temperature);
+
+    if (!tempChart) {
+      const ctx = document.getElementById('tempChart').getContext('2d');
+      tempChart = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: [],
-            datasets: [{ label, data: [], borderColor: color,
-                         backgroundColor: color + '18',
-                         borderWidth: 2, tension: 0.4, pointRadius: 2,
-                         fill: true }]
+          labels,
+          datasets: [{
+            label: 'Temperatura (°C)',
+            data: temps,
+            borderColor: '#3ECF8E',
+            backgroundColor: 'rgba(62,207,142,0.08)',
+            borderWidth: 2,
+            pointRadius: data.length > 100 ? 0 : 3,
+            pointBackgroundColor: '#3ECF8E',
+            tension: 0.3,
+            fill: true,
+          }]
         },
         options: {
-            animation: false,
-            plugins: { legend: { display: false } },
-            scales: {
-                x: { grid: { color: '#1f2d44' }, ticks: { maxTicksLimit: 8, font: { size: 11 } } },
-                y: { grid: { color: '#1f2d44' }, ticks: { font: { size: 11 } } }
+          responsive: true, maintainAspectRatio: false,
+          animation: { duration: 300 },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#1c1c1c',
+              borderColor: 'rgba(255,255,255,0.1)',
+              borderWidth: 1,
+              titleColor: '#ededed',
+              bodyColor: '#888',
+              callbacks: {
+                label: ctx => `${ctx.parsed.y.toFixed(1)} °C`
+              }
             }
+          },
+          scales: {
+            x: {
+              ticks: { color: '#555', maxTicksLimit: 8, font: { size: 10 } },
+              grid: { color: 'rgba(255,255,255,0.04)' }
+            },
+            y: {
+              ticks: { color: '#555', font: { size: 10 }, callback: v => v + '°C' },
+              grid: { color: 'rgba(255,255,255,0.04)' }
+            }
+          }
         }
-    });
-}
-let tempChart = makeChart("chartTemp", "Temperatura (°C)", "#f87171");
-let humChart  = makeChart("chartHum",  "Umidade (%)",      "#38bdf8");
-
-// ---- Mapa ----
-let map       = L.map('map').setView([-23.21, -45.88], 13);
-let polyline  = null;
-let markers   = [];
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap'
-}).addTo(map);
-
-// ---- Status do broker ----
-async function refreshStatus() {
-    try {
-        const s = await fetchJSON("/api/status");
-        const dot   = document.getElementById("brokerDot");
-        const badge = document.getElementById("brokerBadge");
-        const label = document.getElementById("brokerLabel");
-        if (s.broker_connected) {
-            dot.className = "dot green pulse";
-            badge.textContent = "Online";
-            badge.className = "badge badge-green";
-        } else {
-            dot.className = "dot red";
-            badge.textContent = "Offline";
-            badge.className = "badge badge-red";
-        }
-        document.getElementById("lastMsg").textContent = "Última msg: " + timeAgo(s.last_mqtt_message);
-    } catch(e) {}
-}
-
-// ---- Alarmes ----
-async function refreshAlarms() {
-    try {
-        const alarms = await fetchJSON("/api/alarms");
-        const panel  = document.getElementById("alarmPanel");
-        const list   = document.getElementById("alarmList");
-        document.getElementById("statAlarms").textContent = alarms.length;
-
-        if (alarms.length === 0) { panel.style.display = "none"; return; }
-
-        panel.style.display = "block";
-        list.innerHTML = "";
-        alarms.slice(0, 8).forEach(a => {
-            const li = document.createElement("li");
-            const dir = a.temperature < a.min_temp ? "abaixo do mínimo" : "acima do máximo";
-            li.innerHTML = `<strong>${a.timestamp}</strong> — ${a.vaccine_name} (${a.batch_code}): `
-                         + `<strong>${a.temperature}°C</strong> [limite: ${a.min_temp}–${a.max_temp}°C] — ${dir}`;
-            list.appendChild(li);
-        });
-    } catch(e) {}
-}
-
-// ---- Dispositivos ----
-async function refreshDevices() {
-    try {
-        const devs = await fetchJSON("/api/devices");
-        const el   = document.getElementById("deviceList");
-        const active = devs.filter(d => d.registration_status === 'active');
-        const pending = devs.filter(d => d.registration_status === 'pending');
-        const online = active.filter(d => d.connectivity === 'online').length;
-        document.getElementById("statDevices").textContent = online + "/" + active.length;
-
-        // Badge de pendentes no nav
-        const pb = document.getElementById("pendingBadge");
-        if (pb) {
-            pb.textContent = pending.length;
-            pb.style.display = pending.length > 0 ? "inline" : "none";
-        }
-
-        el.innerHTML = "";
-        const clsMap   = { online:"badge-green", recent:"badge-yellow", offline:"badge-red", never:"badge-gray" };
-        const labelMap = { online:"Online", recent:"Recente", offline:"Offline", never:"Nunca visto" };
-
-        // Pendentes primeiro (só visível para admin)
-        pending.forEach(d => {
-            const div = document.createElement("div");
-            div.className = "device-card";
-            div.innerHTML = `
-              <div>
-                <div class="device-name" style="color:#fbbf24">${d.serial_number}</div>
-                <div class="device-time">Descoberto — aguardando registro</div>
-              </div>
-              <span class="badge badge-pending">Pendente</span>`;
-            el.appendChild(div);
-        });
-
-        active.forEach(d => {
-            const div = document.createElement("div");
-            div.className = "device-card";
-            const tripLink = d.active_trip_id
-                ? `<a href="/trips/${d.active_trip_id}/readings" target="_blank"
-                      style="color:var(--accent);text-decoration:none;font-size:.75rem">
-                     Viagem #${d.active_trip_id} ↗
-                   </a>`
-                : `<span style="color:var(--muted)">Sem viagem ativa</span>`;
-            div.innerHTML = `
-              <div>
-                <div class="device-name">${d.name || d.serial_number}</div>
-                <div class="device-time">${tripLink} · Sinal: ${d.last_seen ? d.last_seen.slice(11,19) : '—'}</div>
-              </div>
-              <span class="badge ${clsMap[d.connectivity]||'badge-gray'}">${labelMap[d.connectivity]||d.connectivity}</span>`;
-            el.appendChild(div);
-        });
-
-        if (devs.length === 0) el.innerHTML = `<span style="color:var(--muted);font-size:.82rem">Nenhum dispositivo encontrado.</span>`;
-    } catch(e) {}
-}
-
-// ---- Admin: Painel ----
-function showAdminPanel() {
-    const panel = document.getElementById("adminPanel");
-    if (panel) { panel.style.display = "block"; panel.scrollIntoView({behavior:"smooth"}); }
-    refreshAdminPending();
-    refreshAdminTrips();
-}
-
-// ---- Admin: Dispositivos pendentes ----
-async function refreshAdminPending() {
-    try {
-        const devs = await fetchJSON("/api/admin/devices/pending");
-        const el = document.getElementById("pendingDeviceList");
-        const label = document.getElementById("pendingCountLabel");
-        if (!el) return;
-        label.textContent = devs.length + " dispositivo(s) aguardando registro";
-
-        if (devs.length === 0) {
-            el.innerHTML = `<span style="color:var(--muted);font-size:.82rem">Nenhum dispositivo descoberto aguardando registro.</span>`;
-            return;
-        }
-        el.innerHTML = "";
-        devs.forEach(d => {
-            const clsMap   = { online:"badge-green", recent:"badge-yellow", offline:"badge-red", never:"badge-gray" };
-            const labelMap = { online:"Online", recent:"Recente", offline:"Offline", never:"Nunca visto" };
-            const div = document.createElement("div");
-            div.className = "pending-card";
-            div.innerHTML = `
-              <div>
-                <div class="serial">📟 ${d.serial_number}</div>
-                <div class="meta">Último sinal: ${d.last_seen || '—'} &nbsp;·&nbsp;
-                  <span class="badge ${clsMap[d.connectivity]||'badge-gray'}" style="font-size:.65rem">${labelMap[d.connectivity]||'—'}</span>
-                </div>
-              </div>
-              <button class="btn btn-success" onclick="openRegisterModal(${d.device_id}, '${d.serial_number}')">🔗 Registrar</button>`;
-            el.appendChild(div);
-        });
-    } catch(e) {}
-}
-
-// ---- Admin: Viagens ----
-async function refreshAdminTrips() {
-    try {
-        const trips = await fetchJSON("/api/admin/trips");
-        const tbody = document.getElementById("adminTripsBody");
-        if (!tbody) return;
-        tbody.innerHTML = "";
-        trips.forEach(t => {
-            const status = t.end_time ? `<span class="badge badge-gray">Encerrada</span>` :
-                                        `<span class="badge badge-green">Em andamento</span>`;
-            const device = t.device_name || t.device_serial || `<span style="color:var(--warn)">Sem dispositivo</span>`;
-            const close = !t.end_time ? `<button class="btn btn-danger" onclick="closeTrip(${t.trip_id})" style="font-size:.72rem;padding:4px 10px">Encerrar</button>` : '';
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-              <td style="font-weight:700;color:var(--accent)">#${t.trip_id}</td>
-              <td>${t.vaccine_name}<br><span style="color:var(--muted);font-size:.72rem">${t.batch_code}</span></td>
-              <td style="font-size:.78rem">${t.origin} → ${t.destination}</td>
-              <td style="font-size:.78rem">${device}</td>
-              <td>${status}</td>
-              <td style="display:flex;gap:6px;flex-wrap:wrap">
-                <a href="/trips/${t.trip_id}/readings" target="_blank"
-                   style="font-size:.72rem;padding:4px 10px;background:#1e1b4b;color:#a78bfa;border:1px solid #3730a3;border-radius:6px;text-decoration:none;white-space:nowrap">
-                  Ver registros
-                </a>
-                ${close}
-              </td>`;
-            tbody.appendChild(tr);
-        });
-    } catch(e) {}
-}
-
-// ---- Admin: Abrir modal registro ----
-async function openRegisterModal(deviceId, serial) {
-    document.getElementById("regDeviceId").value = deviceId;
-    document.getElementById("regDeviceSerial").value = serial;
-    document.getElementById("regDeviceName").value = "";
-
-    // Carrega viagens sem dispositivo ou em andamento
-    const trips = await fetchJSON("/api/admin/trips");
-    const sel = document.getElementById("regTripSelect");
-    sel.innerHTML = "";
-    trips.filter(t => !t.end_time).forEach(t => {
-        const opt = document.createElement("option");
-        opt.value = t.trip_id;
-        opt.textContent = `#${t.trip_id} — ${t.vaccine_name} | ${t.origin} → ${t.destination}`;
-        sel.appendChild(opt);
-    });
-    if (sel.options.length === 0) {
-        sel.innerHTML = `<option disabled>Nenhuma viagem em andamento disponível</option>`;
-    }
-    document.getElementById("modalRegister").style.display = "flex";
-}
-
-async function confirmRegister() {
-    const deviceId = document.getElementById("regDeviceId").value;
-    const name     = document.getElementById("regDeviceName").value.trim();
-    const tripId   = document.getElementById("regTripSelect").value;
-
-    if (!name) { alert("Informe um nome para o dispositivo."); return; }
-    if (!tripId) { alert("Selecione uma viagem."); return; }
-
-    const res = await fetch(`/api/admin/devices/${deviceId}/register`, {
-        method: "POST",
-        headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({ name, trip_id: parseInt(tripId) })
-    });
-    const data = await res.json();
-    if (res.ok) {
-        alert("✔ " + data.message);
-        closeModal("modalRegister");
-        refreshAdminPending();
-        refreshAdminTrips();
-        refreshDevices();
-        loadTrips();
+      });
     } else {
-        alert("Erro: " + data.error);
+      tempChart.data.labels = labels;
+      tempChart.data.datasets[0].data = temps;
+      tempChart.data.datasets[0].pointRadius = data.length > 100 ? 0 : 3;
+      tempChart.update();
     }
-}
 
-// ---- Admin: Nova viagem ----
-async function showNewTripModal() {
-    const batches = await fetchJSON("/api/admin/batches");
-    const sel = document.getElementById("tripBatchSelect");
-    sel.innerHTML = "";
-    batches.forEach(b => {
-        const opt = document.createElement("option");
-        opt.value = b.batch_id;
-        opt.textContent = `${b.vaccine_name} — ${b.batch_code} (val: ${b.expiration_date})`;
-        sel.appendChild(opt);
-    });
-    document.getElementById("modalTrip").style.display = "flex";
-}
+    // ── Map ──
+    routeLayer.clearLayers();
+    markersLayer.clearLayers();
 
-async function confirmNewTrip() {
-    const batch_id    = document.getElementById("tripBatchSelect").value;
-    const origin      = document.getElementById("tripOrigin").value.trim();
-    const destination = document.getElementById("tripDestination").value.trim();
-    if (!origin || !destination) { alert("Preencha origem e destino."); return; }
+    const gpsPoints = data.filter(r => r.latitude && r.longitude &&
+      (Math.abs(r.latitude) > 0.001 || Math.abs(r.longitude) > 0.001));
 
-    const res = await fetch("/api/admin/trips", {
-        method: "POST",
-        headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({ batch_id: parseInt(batch_id), origin, destination })
-    });
-    const data = await res.json();
-    if (res.ok) {
-        alert(`✔ Viagem #${data.trip_id} criada com sucesso!`);
-        closeModal("modalTrip");
-        refreshAdminTrips();
-        loadTrips();
+    if (gpsPoints.length > 0) {
+      const latlngs = gpsPoints.map(r => [r.latitude, r.longitude]);
+
+      // Route polyline
+      L.polyline(latlngs, {
+        color: '#3ECF8E', weight: 3, opacity: .8, lineJoin: 'round'
+      }).addTo(routeLayer);
+
+      // Start marker
+      L.circleMarker(latlngs[0], {
+        radius: 7, fillColor: '#3ECF8E', color: '#0f0f0f', weight: 2, fillOpacity: 1
+      }).bindPopup('<b>Início</b>').addTo(markersLayer);
+
+      // End marker (if different from start)
+      if (latlngs.length > 1) {
+        const last = latlngs[latlngs.length - 1];
+        L.circleMarker(last, {
+          radius: 7, fillColor: '#f0a500', color: '#0f0f0f', weight: 2, fillOpacity: 1
+        }).bindPopup('<b>Última posição</b>').addTo(markersLayer);
+      }
+
+      // Intermediate points (sample if too many)
+      const step = Math.max(1, Math.floor(latlngs.length / 30));
+      for (let i = 1; i < latlngs.length - 1; i += step) {
+        const r = gpsPoints[i];
+        L.circleMarker(latlngs[i], {
+          radius: 3, fillColor: '#60a5fa', color: '#0f0f0f', weight: 1, fillOpacity: .8
+        }).bindPopup(`${r.temperature.toFixed(1)}°C · ${r.humidity.toFixed(0)}%`).addTo(markersLayer);
+      }
+
+      map.fitBounds(L.polyline(latlngs).getBounds(), { padding: [20, 20] });
     } else {
-        alert("Erro: " + data.error);
+      map.setView([-23.5, -46.6], 5);
     }
+
+  }).catch(() => {});
 }
 
-async function closeTrip(tripId) {
-    if (!confirm(`Encerrar viagem #${tripId}?`)) return;
-    const res = await fetch(`/api/admin/trips/${tripId}/close`, { method:"POST" });
-    const data = await res.json();
-    if (res.ok) { alert("✔ " + data.message); refreshAdminTrips(); loadTrips(); }
-    else alert("Erro: " + data.error);
-}
-
-function closeModal(id) { document.getElementById(id).style.display = "none"; }
-
-// ---- Registros de Viagem ----
-async function openTripReadingsMenu(e) {
-    e.preventDefault();
-    let menu = document.getElementById("tripReadingsMenu");
-    if (menu) { menu.remove(); return; }
-
-    const trips = await fetchJSON("/api/trips");
-    menu = document.createElement("div");
-    menu.id = "tripReadingsMenu";
-    menu.style.cssText = `
-        position:fixed; top:0; left:220px; height:100vh; width:280px;
-        background:#1a1d27; border-right:1px solid #2d3148;
-        z-index:200; padding:20px 16px; overflow-y:auto;
-        box-shadow: 4px 0 20px rgba(0,0,0,.4);`;
-    menu.innerHTML = `
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-          <span style="font-weight:700;color:#a78bfa;font-size:.9rem">📊 Registros de Viagem</span>
-          <button onclick="document.getElementById('tripReadingsMenu').remove()"
-                  style="background:none;border:none;color:#7c8db5;cursor:pointer;font-size:18px">×</button>
+// ── Admin ─────────────────────────────────────────────────────
+function refreshAdminPending() {
+  fetch('/api/admin/devices/pending').then(r => r.json()).then(data => {
+    const badge = document.getElementById('pendingBadge');
+    if (badge) {
+      badge.textContent = data.length;
+      badge.style.display = data.length ? '' : 'none';
+    }
+    const list = document.getElementById('pendingList');
+    if (!list) return;
+    if (!data.length) {
+      list.innerHTML = '<div class="empty-state"><div class="empty-icon">✓</div>Nenhum dispositivo pendente</div>';
+      return;
+    }
+    list.innerHTML = data.map(d => `
+      <div class="pending-item">
+        <div>
+          <div class="pi-name">${d.serial_number}</div>
+          <div class="pi-id">Visto: ${d.last_seen || '—'}</div>
         </div>
-        ${trips.length === 0 ? '<p style="color:#475569;font-size:.8rem">Nenhuma viagem encontrada.</p>' :
-          trips.map(t => `
-            <a href="/trips/${t.trip_id}/readings" target="_blank"
-               onclick="document.getElementById('tripReadingsMenu').remove()"
-               style="display:block;padding:12px;margin-bottom:8px;background:#151720;
-                      border:1px solid #2d3148;border-radius:8px;text-decoration:none;
-                      color:#e2e8f0;transition:background .15s"
-               onmouseover="this.style.background='#1e2135'" onmouseout="this.style.background='#151720'">
-              <div style="font-weight:700;color:#a78bfa;font-size:.85rem">#${t.trip_id} — ${t.vaccine_name}</div>
-              <div style="font-size:.72rem;color:#7c8db5;margin-top:3px">${t.origin} → ${t.destination}</div>
-              <div style="font-size:.7rem;margin-top:4px">
-                <span style="padding:2px 8px;border-radius:10px;font-weight:600;
-                  ${t.status === 'active' ? 'background:#14532d;color:#4ade80' : 'background:#1e1b4b;color:#818cf8'}">
-                  ${t.status === 'active' ? 'Ativa' : 'Encerrada'}
-                </span>
-              </div>
-            </a>`).join('')}`;
-    document.body.appendChild(menu);
+        <button class="btn btn-primary btn-sm" onclick="openRegisterModal(${d.device_id}, '${d.serial_number}')">
+          Registrar
+        </button>
+      </div>`).join('');
+  }).catch(() => {});
 }
 
-// ---- Leituras recentes ----
-async function refreshRecent() {
-    try {
-        const recent = await fetchJSON("/api/readings/recent");
-        if (recent.length > 0) {
-            document.getElementById("statTemp").textContent = recent[0].temperature.toFixed(1) + "°C";
-            document.getElementById("statHum").textContent  = recent[0].humidity.toFixed(1) + "%";
-        }
-        const tbody = document.getElementById("recentBody");
-        tbody.innerHTML = "";
-        recent.forEach(r => {
-            const violation = r.temperature < r.min_temp || r.temperature > r.max_temp;
-            const hasGPS = r.latitude && r.longitude;
-            const tr = document.createElement("tr");
-            if (violation) tr.className = "alarm-row";
-            tr.innerHTML = `
-                <td>${r.timestamp.slice(11,19)}</td>
-                <td class="temp-val ${violation ? 'temp-alarm' : ''}">${r.temperature.toFixed(1)}°C${violation ? '<span class="warn-icon">⚠</span>' : ''}</td>
-                <td>${r.humidity.toFixed(1)}%</td>
-                <td style="color:var(--muted)">${hasGPS ? '📍 Fix' : '—'}</td>
-                <td><span class="badge ${violation ? 'badge-red' : 'badge-green'}">${violation ? 'Alerta' : 'Normal'}</span></td>`;
-            tbody.appendChild(tr);
-        });
-    } catch(e) {}
-}
-
-// ---- Viagens ----
-let currentTripId = null;
-
-async function loadTrips() {
-    const trips = await fetchJSON("/api/trips");
-    const sel = document.getElementById("tripSelect");
-    sel.innerHTML = "";
-    trips.forEach(t => {
-        const opt = document.createElement("option");
-        opt.value = t.trip_id;
-        opt.textContent = `#${t.trip_id} — ${t.batch_code} | ${t.origin} → ${t.destination}`;
-        sel.appendChild(opt);
-    });
-    if (trips.length) {
-        sel.value = trips[0].trip_id;
-        loadTrip(trips[0]);
+function refreshAdminTrips() {
+  fetch('/api/admin/trips').then(r => r.json()).then(data => {
+    const body = document.getElementById('tripsBody');
+    if (!body) return;
+    if (!data.length) {
+      body.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">Nenhuma viagem</td></tr>';
+      return;
     }
-    sel.onchange = () => {
-        const t = trips.find(x => x.trip_id == sel.value);
-        if (t) loadTrip(t);
-    };
+    body.innerHTML = data.map(t => {
+      const active = !t.end_time;
+      return `<tr>
+        <td>#${t.trip_id}</td>
+        <td>${t.vaccine_name}<br><small style="color:var(--muted)">${t.batch_code}</small></td>
+        <td>${t.origin} → ${t.destination}</td>
+        <td><span class="tag ${active ? 'tag-ok' : ''}">${active ? 'Ativa' : 'Encerrada'}</span></td>
+        <td>${active ? `<button class="btn btn-danger btn-sm" onclick="closeTrip(${t.trip_id})">Encerrar</button>` : '—'}</td>
+      </tr>`;
+    }).join('');
+  }).catch(() => {});
 }
 
-async function loadTrip(trip) {
-    currentTripId = trip.trip_id;
-
-    document.getElementById("tripMeta").innerHTML = `
-        <div class="trip-badge">Vacina: <span>${trip.vaccine_name}</span></div>
-        <div class="trip-badge">Faixa: <span>${trip.min_temp}°C a ${trip.max_temp}°C</span></div>
-        <div class="trip-badge">Lote: <span>${trip.batch_code}</span></div>`;
-
-    document.getElementById("tempRange").textContent = `Faixa: ${trip.min_temp}°C – ${trip.max_temp}°C`;
-
-    const readings = await fetchJSON("/api/readings/" + trip.trip_id);
-
-    // Mapa
-    if (polyline) map.removeLayer(polyline);
-    markers.forEach(m => map.removeLayer(m));
-    markers = [];
-
-    const coords = readings
-        .map(r => [r.latitude, r.longitude])
-        .filter(c => c[0] && c[1]);
-
-    if (coords.length) {
-        polyline = L.polyline(coords, {color: '#38bdf8', weight: 3, opacity: .8}).addTo(map);
-        map.fitBounds(polyline.getBounds(), {padding: [20,20]});
-        coords.forEach(c => markers.push(
-            L.circleMarker(c, {radius: 4, color:'#f87171', fillColor:'#f87171', fillOpacity:1}).addTo(map)
-        ));
-    }
-
-    // Charts
-    const labels = readings.map(r => r.timestamp.slice(11,19));
-    const temps  = readings.map(r => r.temperature);
-    const hums   = readings.map(r => r.humidity);
-
-    tempChart.data.labels = labels;
-    tempChart.data.datasets[0].data = temps;
-    tempChart.update();
-
-    humChart.data.labels = labels;
-    humChart.data.datasets[0].data = hums;
-    humChart.update();
+function openRegisterModal(deviceId, serial) {
+  pendingDeviceSerial = deviceId;
+  document.getElementById('modalDeviceId').textContent = serial;
+  document.getElementById('regName').value = '';
+  // Populate trip select
+  fetch('/api/admin/trips').then(r => r.json()).then(trips => {
+    document.getElementById('regTrip').innerHTML =
+      trips.filter(t => !t.end_time).map(t =>
+        `<option value="${t.trip_id}">#${t.trip_id} — ${t.vaccine_name} (${t.origin} → ${t.destination})</option>`
+      ).join('');
+    document.getElementById('modalRegister').classList.add('open');
+  });
 }
 
-// ---- Refresh automático ----
-async function refreshAll() {
-    await Promise.all([
-        refreshStatus(),
-        refreshAlarms(),
-        refreshDevices(),
-        refreshRecent()
-    ]);
+function confirmRegister() {
+  const name = document.getElementById('regName').value.trim();
+  const tripId = document.getElementById('regTrip').value;
+  if (!name || !tripId) return alert('Preencha todos os campos.');
+  fetch(`/api/admin/devices/${pendingDeviceSerial}/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, trip_id: parseInt(tripId) })
+  }).then(r => r.json()).then(() => {
+    closeModal('modalRegister');
+    refreshAdminPending();
+    refreshDevices();
+  });
 }
 
-loadTrips();
-refreshAll();
-setInterval(refreshAll, 5000);
+function showNewTripModal() {
+  fetch('/api/admin/batches').then(r => r.json()).then(batches => {
+    document.getElementById('newTripBatch').innerHTML = batches.map(b =>
+      `<option value="${b.batch_id}">${b.vaccine_name} — ${b.batch_code}</option>`
+    ).join('');
+    document.getElementById('newTripOrigin').value = '';
+    document.getElementById('newTripDest').value = '';
+    document.getElementById('modalNewTrip').classList.add('open');
+  });
+}
+
+function confirmNewTrip() {
+  const batchId  = document.getElementById('newTripBatch').value;
+  const origin   = document.getElementById('newTripOrigin').value.trim();
+  const dest     = document.getElementById('newTripDest').value.trim();
+  if (!origin || !dest) return alert('Preencha origem e destino.');
+  fetch('/api/admin/trips', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ batch_id: parseInt(batchId), origin, destination: dest })
+  }).then(r => r.json()).then(() => {
+    closeModal('modalNewTrip');
+    refreshAdminTrips();
+    refreshTrips();
+  });
+}
+
+function closeTrip(tripId) {
+  if (!confirm(`Encerrar viagem #${tripId}?`)) return;
+  fetch(`/api/admin/trips/${tripId}/close`, { method: 'POST' })
+    .then(() => { refreshAdminTrips(); refreshTrips(); });
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+// Close modal on overlay click
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
+});
+
+// ── Helpers ───────────────────────────────────────────────────
+function timeAgo(isoStr) {
+  const diff = Math.floor((Date.now() - new Date(isoStr)) / 1000);
+  if (diff < 60)  return `há ${diff}s`;
+  if (diff < 3600) return `há ${Math.floor(diff/60)}min`;
+  return `há ${Math.floor(diff/3600)}h`;
+}
+
+// ── Init & refresh loop ───────────────────────────────────────
+initMap();
+refreshStatus();
+refreshDevices();
+refreshTrips();
+{% if user_role == 'admin' %}refreshAdminPending();{% endif %}
+
+setInterval(() => {
+  refreshStatus();
+  refreshDevices();
+  if (currentTripId) refreshChartAndMap(currentTripId);
+  {% if user_role == 'admin' %}refreshAdminPending();{% endif %}
+}, 10000);
 </script>
 </body>
 </html>

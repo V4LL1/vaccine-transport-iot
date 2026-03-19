@@ -1,130 +1,147 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Viagem #{{ trip.trip_id }} — Registros</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: #0f1117; color: #e2e8f0; font-family: 'Segoe UI', sans-serif; min-height: 100vh; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Viagem #{{ trip.trip_id }} — Registros</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:      #0f0f0f;
+  --surface: #1c1c1c;
+  --surface2:#262626;
+  --border:  rgba(255,255,255,0.08);
+  --border2: rgba(255,255,255,0.14);
+  --text:    #ededed;
+  --muted:   #888;
+  --muted2:  #444;
+  --accent:  #3ECF8E;
+  --danger:  #f66060;
+  --warn:    #f0a500;
+}
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg); color: var(--text);
+  min-height: 100vh; font-size: 13.5px; line-height: 1.5;
+}
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 3px; }
 
-    header {
-      background: #1a1d27;
-      border-bottom: 1px solid #2d3148;
-      padding: 16px 32px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    header h1 { font-size: 18px; font-weight: 600; color: #a78bfa; }
-    header a {
-      color: #7c8db5;
-      text-decoration: none;
-      font-size: 13px;
-      padding: 6px 14px;
-      border: 1px solid #2d3148;
-      border-radius: 6px;
-      transition: all .2s;
-    }
-    header a:hover { background: #2d3148; color: #e2e8f0; }
+/* ── Header ─────────────────────────────────────────────── */
+header {
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: 0 28px; height: 52px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 50;
+}
+.header-left { display: flex; align-items: center; gap: 14px; }
+.logo-mark {
+  width: 30px; height: 30px; background: var(--accent); border-radius: 7px;
+  display: flex; align-items: center; justify-content: center; font-size: 15px;
+}
+.header-title { font-size: .88rem; font-weight: 600; color: var(--text); }
+.header-sub   { font-size: .72rem; color: var(--muted); margin-top: 1px; }
+.btn-back {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: 7px;
+  border: 1px solid var(--border); background: transparent;
+  color: var(--muted); font-family: inherit; font-size: .78rem;
+  text-decoration: none; transition: all .15s;
+}
+.btn-back:hover { border-color: var(--border2); color: var(--text); background: var(--surface2); }
 
-    .container { max-width: 1200px; margin: 0 auto; padding: 28px 24px; }
+/* ── Container ───────────────────────────────────────────── */
+.container { max-width: 1280px; margin: 0 auto; padding: 28px 24px; }
 
-    /* Trip info card */
-    .trip-card {
-      background: #1a1d27;
-      border: 1px solid #2d3148;
-      border-radius: 10px;
-      padding: 20px 24px;
-      margin-bottom: 24px;
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 16px;
-    }
-    .trip-field label { font-size: 11px; color: #7c8db5; text-transform: uppercase; letter-spacing: .5px; }
-    .trip-field span  { display: block; font-size: 14px; color: #e2e8f0; margin-top: 4px; font-weight: 500; }
+/* ── Trip info card ──────────────────────────────────────── */
+.trip-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 20px 24px; margin-bottom: 20px;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px;
+}
+.trip-field label {
+  font-size: .65rem; font-weight: 600; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .07em; display: block; margin-bottom: 5px;
+}
+.trip-field span { font-size: .85rem; font-weight: 500; color: var(--text); }
 
-    .status-badge {
-      display: inline-block;
-      padding: 2px 10px;
-      border-radius: 12px;
-      font-size: 12px;
-      font-weight: 600;
-    }
-    .status-active   { background: #14532d; color: #4ade80; }
-    .status-closed   { background: #1e1b4b; color: #818cf8; }
+.badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: .68rem; font-weight: 600; padding: 3px 9px; border-radius: 5px;
+}
+.badge-active  { background: rgba(62,207,142,.12); color: var(--accent); }
+.badge-closed  { background: var(--surface2); color: var(--muted); }
 
-    /* Stats bar */
-    .stats {
-      display: flex;
-      gap: 16px;
-      margin-bottom: 20px;
-      flex-wrap: wrap;
-    }
-    .stat-box {
-      background: #1a1d27;
-      border: 1px solid #2d3148;
-      border-radius: 8px;
-      padding: 12px 20px;
-      flex: 1;
-      min-width: 140px;
-    }
-    .stat-box .val { font-size: 22px; font-weight: 700; color: #a78bfa; }
-    .stat-box .lbl { font-size: 11px; color: #7c8db5; margin-top: 2px; }
-    .stat-box.danger .val { color: #f87171; }
-    .stat-box.ok    .val  { color: #4ade80; }
+/* ── Stats ───────────────────────────────────────────────── */
+.stats { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+.stat {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 14px 18px; flex: 1; min-width: 130px;
+}
+.stat .val { font-size: 1.5rem; font-weight: 700; color: var(--text); line-height: 1.2; }
+.stat .lbl { font-size: .68rem; color: var(--muted); margin-top: 3px; }
+.stat.ok     .val { color: var(--accent); }
+.stat.danger .val { color: var(--danger); }
 
-    /* Table */
-    .table-wrap {
-      background: #1a1d27;
-      border: 1px solid #2d3148;
-      border-radius: 10px;
-      overflow: hidden;
-    }
-    .table-header {
-      padding: 14px 20px;
-      border-bottom: 1px solid #2d3148;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .table-header h2 { font-size: 14px; font-weight: 600; color: #a78bfa; }
+/* ── Table ───────────────────────────────────────────────── */
+.table-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
+}
+.table-card-header {
+  padding: 14px 20px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.table-card-header h2 { font-size: .85rem; font-weight: 600; color: var(--text); }
+.table-card-header .count { font-size: .72rem; color: var(--muted); }
 
-    table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    thead th {
-      background: #151720;
-      padding: 10px 14px;
-      text-align: left;
-      font-size: 11px;
-      font-weight: 600;
-      color: #7c8db5;
-      text-transform: uppercase;
-      letter-spacing: .5px;
-      border-bottom: 1px solid #2d3148;
-      position: sticky;
-      top: 0;
-    }
-    tbody tr { border-bottom: 1px solid #1e2135; transition: background .15s; }
-    tbody tr:last-child { border-bottom: none; }
-    tbody tr:hover { background: #1e2135; }
-    tbody td { padding: 9px 14px; color: #cbd5e1; }
-    tbody td.mono { font-family: 'Consolas', monospace; font-size: 12px; }
+.table-scroll { max-height: 68vh; overflow-y: auto; }
+table { width: 100%; border-collapse: collapse; font-size: .8rem; }
+thead th {
+  background: var(--bg); padding: 9px 14px; text-align: left;
+  font-size: .65rem; font-weight: 600; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .06em;
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 10;
+}
+tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover td { background: var(--surface2); }
+tbody td { padding: 9px 14px; color: var(--text); }
+tbody tr.row-viol td { background: rgba(246,96,96,.04); }
+tbody tr.row-viol:hover td { background: rgba(246,96,96,.08); }
 
-    .temp-ok      { color: #4ade80; font-weight: 600; }
-    .temp-danger  { color: #f87171; font-weight: 600; }
-    .row-danger   { background: rgba(248,113,113,.05); }
+.mono { font-family: 'Consolas', 'SF Mono', monospace; font-size: .78rem; }
+.idx  { color: var(--muted2); font-size: .72rem; }
+.temp-ok   { color: var(--accent); font-weight: 600; }
+.temp-viol { color: var(--danger); font-weight: 600; }
+.no-gps    { color: var(--muted2); font-style: italic; }
 
-    .idx { color: #475569; font-size: 11px; }
-    .no-gps { color: #475569; font-style: italic; }
+.tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: .65rem; font-weight: 600; padding: 2px 7px; border-radius: 4px;
+}
+.tag-ok   { background: rgba(62,207,142,.12); color: var(--accent); }
+.tag-viol { background: rgba(246,96,96,.12);  color: var(--danger); }
 
-    .empty { padding: 48px; text-align: center; color: #475569; }
-  </style>
+.empty { padding: 52px; text-align: center; color: var(--muted); font-size: .85rem; }
+.empty-icon { font-size: 2rem; opacity: .3; display: block; margin-bottom: 8px; }
+</style>
 </head>
 <body>
 
 <header>
-  <h1>Viagem #{{ trip.trip_id }} — {{ trip.vaccine_name }} ({{ trip.batch_code }})</h1>
-  <a href="/">← Voltar ao Dashboard</a>
+  <div class="header-left">
+    <div class="logo-mark">💉</div>
+    <div>
+      <div class="header-title">Viagem #{{ trip.trip_id }} — {{ trip.vaccine_name }}</div>
+      <div class="header-sub">{{ trip.batch_code }} &nbsp;·&nbsp; {{ trip.origin }} → {{ trip.destination }}</div>
+    </div>
+  </div>
+  <a href="/" class="btn-back">← Dashboard</a>
 </header>
 
 <div class="container">
@@ -134,8 +151,8 @@
     <div class="trip-field">
       <label>Status</label>
       <span>
-        <span class="status-badge {% if trip.status == 'active' %}status-active{% else %}status-closed{% endif %}">
-          {{ 'Ativa' if trip.status == 'active' else 'Encerrada' }}
+        <span class="badge {% if trip.status == 'active' %}badge-active{% else %}badge-closed{% endif %}">
+          {% if trip.status == 'active' %}● Ativa{% else %}○ Encerrada{% endif %}
         </span>
       </span>
     </div>
@@ -157,44 +174,45 @@
     </div>
     <div class="trip-field">
       <label>Faixa de Temperatura</label>
-      <span>{{ trip.min_temp }}°C a {{ trip.max_temp }}°C</span>
+      <span>{{ trip.min_temp }}°C → {{ trip.max_temp }}°C</span>
     </div>
   </div>
 
   <!-- Stats -->
   <div class="stats">
-    <div class="stat-box">
+    <div class="stat">
       <div class="val">{{ stats.total }}</div>
       <div class="lbl">Total de registros</div>
     </div>
-    <div class="stat-box {% if stats.violations > 0 %}danger{% else %}ok{% endif %}">
+    <div class="stat {% if stats.violations > 0 %}danger{% else %}ok{% endif %}">
       <div class="val">{{ stats.violations }}</div>
       <div class="lbl">Violações de temperatura</div>
     </div>
     {% if stats.avg is not none %}
-    <div class="stat-box">
+    <div class="stat">
       <div class="val">{{ stats.avg }}°C</div>
       <div class="lbl">Temperatura média</div>
     </div>
-    <div class="stat-box">
-      <div class="val">{{ stats.max }}°C</div>
-      <div class="lbl">Temperatura máxima</div>
-    </div>
-    <div class="stat-box">
+    <div class="stat">
       <div class="val">{{ stats.min }}°C</div>
-      <div class="lbl">Temperatura mínima</div>
+      <div class="lbl">Mínima registrada</div>
+    </div>
+    <div class="stat">
+      <div class="val">{{ stats.max }}°C</div>
+      <div class="lbl">Máxima registrada</div>
     </div>
     {% endif %}
   </div>
 
   <!-- Table -->
-  <div class="table-wrap">
-    <div class="table-header">
+  <div class="table-card">
+    <div class="table-card-header">
       <h2>Registros</h2>
-      <span style="font-size:12px;color:#7c8db5;">{{ readings | length }} leituras · ordem cronológica</span>
+      <span class="count">{{ readings | length }} leituras · ordem cronológica</span>
     </div>
+
     {% if readings %}
-    <div style="max-height: 65vh; overflow-y: auto;">
+    <div class="table-scroll">
       <table>
         <thead>
           <tr>
@@ -210,10 +228,10 @@
         <tbody>
           {% for r in readings %}
           {% set ok = r.temperature >= r.min_temp and r.temperature <= r.max_temp %}
-          <tr class="{{ '' if ok else 'row-danger' }}">
+          <tr class="{{ '' if ok else 'row-viol' }}">
             <td class="idx">{{ loop.index }}</td>
             <td class="mono">{{ r.timestamp }}</td>
-            <td class="{{ 'temp-ok' if ok else 'temp-danger' }}">{{ '%.2f' % r.temperature }}°C</td>
+            <td class="{{ 'temp-ok' if ok else 'temp-viol' }}">{{ '%.2f' % r.temperature }}°C</td>
             <td>{{ '%.1f' % r.humidity }}%</td>
             <td class="mono {% if not r.latitude %}no-gps{% endif %}">
               {{ '%.6f' % r.latitude if r.latitude else 'sem fix' }}
@@ -223,9 +241,9 @@
             </td>
             <td>
               {% if ok %}
-                <span style="color:#4ade80;font-size:12px;">✓ OK</span>
+                <span class="tag tag-ok">✓ OK</span>
               {% else %}
-                <span style="color:#f87171;font-size:12px;">✗ Violação</span>
+                <span class="tag tag-viol">✗ Violação</span>
               {% endif %}
             </td>
           </tr>
@@ -234,7 +252,10 @@
       </table>
     </div>
     {% else %}
-      <div class="empty">Nenhum registro encontrado para esta viagem.</div>
+      <div class="empty">
+        <span class="empty-icon">📋</span>
+        Nenhum registro encontrado para esta viagem.
+      </div>
     {% endif %}
   </div>
 

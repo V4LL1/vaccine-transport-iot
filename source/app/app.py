@@ -450,11 +450,25 @@ def start_mqtt_subscriber():
 @app.route("/")
 @login_required
 def index():
+    # Busca a viagem ativa mais recente para pré-selecionar no dashboard
+    active_trip_id = None
+    try:
+        conn = db()
+        cur  = conn.cursor()
+        cur.execute("SELECT trip_id FROM trips WHERE end_time IS NULL ORDER BY start_time DESC LIMIT 1")
+        row = cur.fetchone()
+        if row:
+            active_trip_id = row[0]
+        cur.close()
+        conn.close()
+    except Exception:
+        pass
     return render_template(
         "index.html",
         user_name=current_user.name,
         user_role=current_user.role,
         user_permissions=list(PERMISSIONS.get(current_user.role, set())),
+        active_trip_id=active_trip_id,
     )
 
 
