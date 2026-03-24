@@ -423,7 +423,8 @@ def start_mqtt_subscriber():
         client.tls_set(ca_certs=ca_cert)
         logging.info(f"MQTT: TLS ativado com CA={ca_cert}")
     else:
-        logging.warning(f"MQTT: CA cert não encontrado ({ca_cert}) — conectando sem TLS (modo dev)")
+        client.tls_set()  # usa CA store do sistema (HiveMQ Cloud / Let's Encrypt)
+        logging.info("MQTT: TLS ativado via CA store do sistema")
 
     if MQTT_USERNAME:
         client.username_pw_set(MQTT_USERNAME, MQTT_PASSWORD)

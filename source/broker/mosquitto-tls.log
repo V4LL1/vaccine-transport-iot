@@ -17845,3 +17845,132 @@
 1774041374: Received PINGREQ from flask-subscriber
 1774041374: Sending PINGRESP to flask-subscriber
 1774041415: Client flask-subscriber closed its connection.
+1774297385: mosquitto version 2.0.22 starting
+1774297385: Config loaded from C:\Users\guilh\Desktop\vaccine-transport-iot\source\broker\mosquitto-tls.conf.
+1774297385: Opening ipv6 listen socket on port 8883.
+1774297385: Opening ipv4 listen socket on port 8883.
+1774297385: mosquitto version 2.0.22 running
+1774297389: New connection from 127.0.0.1:52823 on port 8883.
+1774297389: New client connected from 127.0.0.1:52823 as flask-subscriber (p2, c1, k60, u'flask-subscriber').
+1774297389: No will message specified.
+1774297389: Sending CONNACK to flask-subscriber (0, 0)
+1774297389: Received SUBSCRIBE from flask-subscriber
+1774297389: 	vaccines/readings (QoS 0)
+1774297389: flask-subscriber 0 vaccines/readings
+1774297389: Sending SUBACK to flask-subscriber
+1774297389: Received SUBSCRIBE from flask-subscriber
+1774297389: 	vaccines/heartbeat (QoS 0)
+1774297389: flask-subscriber 0 vaccines/heartbeat
+1774297389: Sending SUBACK to flask-subscriber
+1774297423: New connection from 10.0.0.133:55374 on port 8883.
+1774297424: New client connected from 10.0.0.133:55374 as ESP32-B0A732D765D0 (p2, c1, k15, u'esp32-device').
+1774297424: No will message specified.
+1774297424: Sending CONNACK to ESP32-B0A732D765D0 (0, 0)
+1774297429: Received PUBLISH from ESP32-B0A732D765D0 (d0, q0, r0, m0, 'vaccines/readings', ... (165 bytes))
+1774297429: Sending PUBLISH to flask-subscriber (d0, q0, r0, m0, 'vaccines/readings', ... (165 bytes))
+1774297434: Received PUBLISH from ESP32-B0A732D765D0 (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1774297434: Sending PUBLISH to flask-subscriber (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1774297439: Received PINGREQ from ESP32-B0A732D765D0
+1774297439: Sending PINGRESP to ESP32-B0A732D765D0
+1774297439: Received PUBLISH from ESP32-B0A732D765D0 (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1774297439: Sending PUBLISH to flask-subscriber (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1774297444: Received PUBLISH from ESP32-B0A732D765D0 (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1774297444: Sending PUBLISH to flask-subscriber (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1774297449: Received PUBLISH from ESP32-B0A732D765D0 (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1774297449: Sending PUBLISH to flask-subscriber (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1774297449: Received PUBLISH from ESP32-B0A732D765D0 (d0, q0, r0, m0, 'vaccines/heartbeat', ... (87 bytes))
+1774297449: Sending PUBLISH to flask-subscriber (d0, q0, r0, m0, 'vaccines/heartbeat', ... (87 bytes))
+1774297454: Received PINGREQ from ESP32-B0A732D765D0
+1774297454: Sending PINGRESP to ESP32-B0A732D765D0
+1774297454: Received PUBLISH from ESP32-B0A732D765D0 (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1774297454: Sending PUBLISH to flask-subscriber (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1774297454: Received PINGREQ from flask-subscriber
+1774297454: Sending PINGRESP to flask-subscriber
+1774297459: Received PUBLISH from ESP32-B0A732D765D0 (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1774297459: Sending PUBLISH to flask-subscriber (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1774297464: Received PUBLISH from ESP32-B0A732D765D0 (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1774297464: Sending PUBLISH to flask-subscriber (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1774297469: Received PUBLISH from ESP32-B0A732D765D0 (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1774297469: Sending PUBLISH to flask-subscriber (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1774297469: Received PINGREQ from ESP32-B0A732D765D0
+1774297469: Sending PINGRESP to ESP32-B0A732D765D0
+1774297474: Received PUBLISH from ESP32-B0A732D765D0 (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1774297474: Sending PUBLISH to flask-subscriber (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1774297479: Received PUBLISH from ESP32-B0A732D765D0 (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1774297479: Sending PUBLISH to flask-subscriber (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1774297479: Received PUBLISH from ESP32-B0A732D765D0 (d0, q0, r0, m0, 'vaccines/heartbeat', ... (87 bytes))
+1774297479: Sending PUBLISH to flask-subscriber (d0, q0, r0, m0, 'vaccines/heartbeat', ... (87 bytes))
+1774297484: Received PUBLISH from ESP32-B0A732D765D0 (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1774297484: Sending PUBLISH to flask-subscriber (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1774297484: Received PINGREQ from ESP32-B0A732D765D0
+1774297484: Sending PINGRESP to ESP32-B0A732D765D0
+1774297489: Received PUBLISH from ESP32-B0A732D765D0 (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1774297489: Sending PUBLISH to flask-subscriber (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1774297494: Received PUBLISH from ESP32-B0A732D765D0 (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1774297494: Sending PUBLISH to flask-subscriber (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1774297499: Received PUBLISH from ESP32-B0A732D765D0 (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1774297499: Sending PUBLISH to flask-subscriber (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1774297499: Received PINGREQ from ESP32-B0A732D765D0
+1774297499: Sending PINGRESP to ESP32-B0A732D765D0
+1774297504: Received PUBLISH from ESP32-B0A732D765D0 (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1774297504: Sending PUBLISH to flask-subscriber (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1774297509: Received PUBLISH from ESP32-B0A732D765D0 (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1774297509: Sending PUBLISH to flask-subscriber (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1774297509: Received PUBLISH from ESP32-B0A732D765D0 (d0, q0, r0, m0, 'vaccines/heartbeat', ... (87 bytes))
+1774297509: Sending PUBLISH to flask-subscriber (d0, q0, r0, m0, 'vaccines/heartbeat', ... (87 bytes))
+1774297514: Received PUBLISH from ESP32-B0A732D765D0 (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1774297514: Sending PUBLISH to flask-subscriber (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1774297514: Received PINGREQ from ESP32-B0A732D765D0
+1774297514: Sending PINGRESP to ESP32-B0A732D765D0
+1774297515: Received PINGREQ from flask-subscriber
+1774297515: Sending PINGRESP to flask-subscriber
+1774297519: Received PUBLISH from ESP32-B0A732D765D0 (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1774297519: Sending PUBLISH to flask-subscriber (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1774297524: Received PUBLISH from ESP32-B0A732D765D0 (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1774297524: Sending PUBLISH to flask-subscriber (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1774297529: Received PUBLISH from ESP32-B0A732D765D0 (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1774297529: Sending PUBLISH to flask-subscriber (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1774297529: Received PINGREQ from ESP32-B0A732D765D0
+1774297529: Sending PINGRESP to ESP32-B0A732D765D0
+1774297534: Received PUBLISH from ESP32-B0A732D765D0 (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1774297534: Sending PUBLISH to flask-subscriber (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1774297539: Received PUBLISH from ESP32-B0A732D765D0 (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1774297539: Sending PUBLISH to flask-subscriber (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1774297539: Received PUBLISH from ESP32-B0A732D765D0 (d0, q0, r0, m0, 'vaccines/heartbeat', ... (87 bytes))
+1774297539: Sending PUBLISH to flask-subscriber (d0, q0, r0, m0, 'vaccines/heartbeat', ... (87 bytes))
+1774297544: Received PUBLISH from ESP32-B0A732D765D0 (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1774297544: Sending PUBLISH to flask-subscriber (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1774297544: Received PINGREQ from ESP32-B0A732D765D0
+1774297544: Sending PINGRESP to ESP32-B0A732D765D0
+1774297549: Received PUBLISH from ESP32-B0A732D765D0 (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1774297549: Sending PUBLISH to flask-subscriber (d0, q0, r0, m0, 'vaccines/readings', ... (167 bytes))
+1774297571: Client ESP32-B0A732D765D0 has exceeded timeout, disconnecting.
+1774297575: Received PINGREQ from flask-subscriber
+1774297575: Sending PINGRESP to flask-subscriber
+1774297635: Received PINGREQ from flask-subscriber
+1774297635: Sending PINGRESP to flask-subscriber
+1774297696: Received PINGREQ from flask-subscriber
+1774297696: Sending PINGRESP to flask-subscriber
+1774297756: Received PINGREQ from flask-subscriber
+1774297756: Sending PINGRESP to flask-subscriber
+1774297816: Received PINGREQ from flask-subscriber
+1774297816: Sending PINGRESP to flask-subscriber
+1774297877: Received PINGREQ from flask-subscriber
+1774297877: Sending PINGRESP to flask-subscriber
+1774297937: Received PINGREQ from flask-subscriber
+1774297937: Sending PINGRESP to flask-subscriber
+1774297998: Received PINGREQ from flask-subscriber
+1774297998: Sending PINGRESP to flask-subscriber
+1774298058: Received PINGREQ from flask-subscriber
+1774298058: Sending PINGRESP to flask-subscriber
+1774298063: Client flask-subscriber closed its connection.
+1774300145: mosquitto version 2.0.22 starting
+1774300145: Config loaded from C:\Users\guilh\Desktop\vaccine-transport-iot\source\broker\mosquitto-tls.conf.
+1774300145: Opening ipv6 listen socket on port 8883.
+1774300145: Opening ipv4 listen socket on port 8883.
+1774300145: mosquitto version 2.0.22 running
+1774300316: mosquitto version 2.0.22 starting
+1774300316: Config loaded from C:\Users\guilh\Desktop\vaccine-transport-iot\source\broker\mosquitto-tls.conf.
+1774300316: Opening ipv6 listen socket on port 8883.
+1774300316: Opening ipv4 listen socket on port 8883.
+1774300316: mosquitto version 2.0.22 running
