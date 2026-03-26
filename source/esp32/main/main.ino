@@ -32,8 +32,8 @@
 bool ntpSynced = false;
 
 // ======== CONFIGURAÇÕES — ALTERE ANTES DE GRAVAR ========
-const char* WIFI_SSID     = "ORNATUM";
-const char* WIFI_PASSWORD = "ornatum2244";
+const char* WIFI_SSID     = "iPhone-Gui";
+const char* WIFI_PASSWORD = "hash1234";
 const char* MQTT_BROKER   = "1fe6e4dc6c3b41d193f6448d1ab84a93.s1.eu.hivemq.cloud";
 const int   MQTT_PORT     = 8883;            // TLS
 
@@ -288,7 +288,7 @@ void flushBuffer() {
       break;
     }
 
-    bool ok = mqttClient.publish(TOPIC_READINGS, line.c_str());
+    bool ok = mqttClient.publish(TOPIC_READINGS, line.c_str(), true);
     Serial.printf("[Buffer] Linha %d/%d: %s\n",
                   published + (int)failed.size() + 1, (int)lines.size(),
                   ok ? "OK" : "FALHOU");
@@ -367,7 +367,7 @@ void buildPayload(float temp, float hum, char* buf, size_t bufLen) {
 // -------------------------------------------------------
 // Publica payload via MQTT — retorna true se sucesso
 bool publishReading(const char* payload) {
-  if (mqttClient.publish(TOPIC_READINGS, payload)) {
+  if (mqttClient.publish(TOPIC_READINGS, payload, true)) {
     Serial.print("[MQTT] Publicado: ");
     Serial.println(payload);
     return true;

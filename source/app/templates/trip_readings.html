@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Viagem #{{ trip.trip_id }} — Registros</title>
+<title>{{ trip.batch_code }} — Registros</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -135,10 +135,10 @@ tbody tr.row-viol:hover td { background: rgba(246,96,96,.08); }
 
 <header>
   <div class="header-left">
-    <div class="logo-mark">💉</div>
+    <div class="logo-mark">💊</div>
     <div>
-      <div class="header-title">Viagem #{{ trip.trip_id }} — {{ trip.vaccine_name }}</div>
-      <div class="header-sub">{{ trip.batch_code }} &nbsp;·&nbsp; {{ trip.origin }} → {{ trip.destination }}</div>
+      <div class="header-title">{{ trip.batch_code }} — {{ trip.vaccine_name }}</div>
+      <div class="header-sub">Viagem #{{ trip.trip_id }} &nbsp;·&nbsp; {{ trip.origin }} → {{ trip.destination }}</div>
     </div>
   </div>
   <a href="/" class="btn-back">← Dashboard</a>

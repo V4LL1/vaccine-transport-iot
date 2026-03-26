@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<title>VaccineTransport — Dashboard</title>
+<title>PharmaTransport — Dashboard</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -340,9 +340,9 @@ tr:hover td { background: var(--surface2); }
 <!-- ══ SIDEBAR ══════════════════════════════════════════════ -->
 <aside class="sidebar">
   <div class="sidebar-logo">
-    <div class="logo-mark">💉</div>
+    <div class="logo-mark">💊</div>
     <div>
-      <div class="logo-text">VaccineTransport<span>IoT Monitoring</span></div>
+      <div class="logo-text">PharmaTransport<span>IoT Monitoring</span></div>
     </div>
   </div>
 
@@ -416,11 +416,11 @@ tr:hover td { background: var(--surface2); }
 
       <!-- 2. Trip Selector -->
       <div style="margin-top:20px">
-        <div class="section-title">Viagem</div>
+        <div class="section-title">Lote</div>
         <div class="trip-row">
           <div class="trip-select-wrap">
             <select id="tripSelect" onchange="onTripChange()">
-              <option value="">Selecione uma viagem...</option>
+              <option value="">Selecione um lote...</option>
             </select>
           </div>
           <div class="trip-meta" id="tripMeta"></div>
@@ -485,7 +485,7 @@ tr:hover td { background: var(--surface2); }
               <table id="tripsTable">
                 <thead>
                   <tr>
-                    <th>ID</th><th>Vacina</th><th>Origem → Destino</th><th>Status</th><th></th>
+                    <th>ID</th><th>Produto</th><th>Origem → Destino</th><th>Status</th><th></th>
                   </tr>
                 </thead>
                 <tbody id="tripsBody">
@@ -528,9 +528,9 @@ tr:hover td { background: var(--surface2); }
 <div class="modal-overlay" id="modalNewTrip">
   <div class="modal">
     <h3>Nova Viagem</h3>
-    <p class="modal-sub">Crie uma nova viagem e associe um lote de vacinas.</p>
+    <p class="modal-sub">Crie uma nova viagem e associe um lote de produtos.</p>
     <div class="form-field">
-      <label>Lote de vacina</label>
+      <label>Lote</label>
       <select id="newTripBatch"></select>
     </div>
     <div class="form-field">
@@ -598,7 +598,7 @@ function refreshDevices() {
       return;
     }
     grid.innerHTML = data.map(d => {
-      const isOnline  = d.is_online;
+      const isOnline  = d.connectivity === 'online' || d.connectivity === 'recent';
       const isPending = d.registration_status === 'pending';
       const dotClass  = isPending ? 'pending' : (isOnline ? 'online' : 'offline');
       const lblClass  = isPending ? 'label-pending' : (isOnline ? 'label-online' : 'label-offline');
@@ -622,9 +622,9 @@ function refreshTrips() {
   fetch('/api/trips').then(r => r.json()).then(data => {
     const sel = document.getElementById('tripSelect');
     const current = sel.value;
-    sel.innerHTML = '<option value="">Selecione uma viagem...</option>' +
+    sel.innerHTML = '<option value="">Selecione um lote...</option>' +
       data.map(t => {
-        const label = `#${t.trip_id} — ${t.vaccine_name} (${t.origin} → ${t.destination})`;
+        const label = `${t.batch_code} — ${t.vaccine_name}`;
         return `<option value="${t.trip_id}">${label}</option>`;
       }).join('');
 
@@ -662,8 +662,8 @@ function loadTripData(tripId, trips) {
       <div class="trip-tag ${isActive ? 'trip-tag-active' : ''}">
         Status: <span>${isActive ? 'Ativa' : 'Encerrada'}</span>
       </div>
-      <div class="trip-tag">Vacina: <span>${trip.vaccine_name}</span></div>
-      <div class="trip-tag">Lote: <span>${trip.batch_code}</span></div>
+      <div class="trip-tag">Produto: <span>${trip.vaccine_name}</span></div>
+      <div class="trip-tag">Viagem: <span>#${trip.trip_id}</span></div>
       <div class="trip-tag">${trip.origin} → <span>${trip.destination}</span></div>
     `;
   }
@@ -674,7 +674,7 @@ function loadTripData(tripId, trips) {
 
 // ── Chart + Map ───────────────────────────────────────────────
 function clearViz() {
-  document.getElementById('chartSub').textContent = 'Selecione uma viagem';
+  document.getElementById('chartSub').textContent = 'Selecione um lote';
   document.getElementById('mapSub').textContent = '—';
   if (tempChart) { tempChart.data.labels = []; tempChart.data.datasets[0].data = []; tempChart.update(); }
   if (routeLayer) routeLayer.clearLayers();
@@ -872,7 +872,7 @@ function confirmRegister() {
 function showNewTripModal() {
   fetch('/api/admin/batches').then(r => r.json()).then(batches => {
     document.getElementById('newTripBatch').innerHTML = batches.map(b =>
-      `<option value="${b.batch_id}">${b.vaccine_name} — ${b.batch_code}</option>`
+      `<option value="${b.batch_id}">${b.batch_code} — ${b.vaccine_name}</option>`
     ).join('');
     document.getElementById('newTripOrigin').value = '';
     document.getElementById('newTripDest').value = '';

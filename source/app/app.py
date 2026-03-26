@@ -318,8 +318,8 @@ def on_connect(client, userdata, flags, reason_code, properties):
     if reason_code == 0:
         mqtt_status["connected"] = True
         logging.info("MQTT: Conectado ao broker.")
-        client.subscribe(TOPIC_READINGS)
-        client.subscribe(TOPIC_HEARTBEAT)
+        client.subscribe(TOPIC_READINGS,  qos=1)
+        client.subscribe(TOPIC_HEARTBEAT, qos=1)
     else:
         mqtt_status["connected"] = False
         logging.warning(f"MQTT: Falha na conexão (rc={reason_code})")
@@ -410,7 +410,8 @@ def start_mqtt_subscriber():
     import time as _time
 
     # Client created once — reused across reconnects so paho never fights itself
-    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="flask-subscriber")
+    # clean_session=False: sessão persistente — HiveMQ guarda mensagens QoS 1 enquanto offline
+    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="flask-subscriber", clean_session=False)
     client.on_connect    = on_connect
     client.on_disconnect = on_disconnect
     client.on_message    = on_message
