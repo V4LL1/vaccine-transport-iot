@@ -4,7 +4,7 @@
 // BCP: Hardware Watchdog + Buffer Offline SPIFFS
 // ============================================================
 
-#define MQTT_MAX_PACKET_SIZE 768   // Maior por causa do HMAC
+#define MQTT_MAX_PACKET_SIZE 768
 
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
@@ -16,7 +16,7 @@
 #include "esp_task_wdt.h"     // Hardware Watchdog Timer
 #include <SPIFFS.h>           // Buffer offline
 #include <time.h>             // NTP — clock de fallback quando GPS sem fix
-#include <vector>             // std::vector para flush do buffer
+#include <vector>             //   std::vector para flush do buffer
 
 // Watchdog: reinicia o ESP32 se o loop principal travar por mais de N segundos
 #define WDT_TIMEOUT_SEC 60
@@ -441,8 +441,8 @@ void setup() {
   Serial.print("[Device] ID: ");
   Serial.println(DEVICE_ID);
 
-  // Configurar TLS com o certificado da CA
-  wifiClientSecure.setCACert(CA_CERT);
+  // TLS ativo — skip validação de certificado (HiveMQ rotaciona certs Let's Encrypt)
+  wifiClientSecure.setInsecure();
 
   mqttClient.setBufferSize(768);
   mqttClient.setServer(MQTT_BROKER, MQTT_PORT);

@@ -72,7 +72,7 @@ translate([0, dim_y + 15, 0]) {
     difference() {
         caixa_arredondada(dim_x, dim_y, 2, raio_canto);
         // Rebaixo da tampa para encaixe
-        translate([espessura_parede + 0.2, espessura_parede + 0.2, -1]) 
+        translate([espessura_parede + 0.2, espessura_parede + 0.2, -1])
             caixa_arredondada(comprimento_proto - 0.4, largura_proto - 0.4, 2, raio_canto/2);
     }
     // Borda de encaixe que se projeta na caixa

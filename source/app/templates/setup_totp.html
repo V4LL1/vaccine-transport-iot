@@ -107,7 +107,10 @@ body {
 <div class="card">
   <div class="card-icon">🔑</div>
   <div class="card-title">Configurar autenticação MFA</div>
-  <div class="card-sub">Configure o código de verificação em duas etapas para proteger sua conta.</div>
+  <div class="card-sub">
+    Configure a verificação em duas etapas para a conta:<br>
+    <strong style="color:var(--accent)">{{ email }}</strong>
+  </div>
 
   <div class="steps">
     <div class="step">
@@ -124,9 +127,11 @@ body {
     </div>
   </div>
 
+  {% if qr_b64 %}
   <div class="qr-wrap">
     <img src="data:image/png;base64,{{ qr_b64 }}" alt="QR Code TOTP" width="180" height="180">
   </div>
+  {% endif %}
 
   <div class="secret-box">
     <strong>Chave manual (se não conseguir escanear)</strong>

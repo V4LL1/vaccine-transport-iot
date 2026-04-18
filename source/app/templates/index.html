@@ -496,6 +496,46 @@ tr:hover td { background: var(--surface2); }
           </div>
         </div>
 
+        <!-- Products -->
+        <div class="panel">
+          <div class="panel-header">
+            <h3>Produtos</h3>
+            <button class="btn btn-primary btn-sm" onclick="showNewVaccineModal()">+ Novo Produto</button>
+          </div>
+          <div class="panel-body" style="padding:0">
+            <div class="table-wrap">
+              <table id="vaccinesTable">
+                <thead>
+                  <tr><th>Nome</th><th>Fabricante</th><th>Faixa (°C)</th></tr>
+                </thead>
+                <tbody id="vaccinesBody">
+                  <tr><td colspan="3" style="text-align:center;color:var(--muted);padding:20px">Carregando...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Batches -->
+        <div class="panel">
+          <div class="panel-header">
+            <h3>Lotes</h3>
+            <button class="btn btn-primary btn-sm" onclick="showNewBatchModal()">+ Novo Lote</button>
+          </div>
+          <div class="panel-body" style="padding:0">
+            <div class="table-wrap">
+              <table id="batchesTable">
+                <thead>
+                  <tr><th>Código</th><th>Produto</th><th>Validade</th><th>Unidades</th></tr>
+                </thead>
+                <tbody id="batchesBody">
+                  <tr><td colspan="4" style="text-align:center;color:var(--muted);padding:20px">Carregando...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
     {% endif %}
@@ -548,6 +588,64 @@ tr:hover td { background: var(--surface2); }
   </div>
 </div>
 
+<!-- New Vaccine Modal -->
+<div class="modal-overlay" id="modalNewVaccine">
+  <div class="modal">
+    <h3>Novo Produto</h3>
+    <p class="modal-sub">Cadastre um produto farmacêutico com sua faixa de temperatura segura.</p>
+    <div class="form-field">
+      <label>Nome do produto *</label>
+      <input type="text" id="newVaccineName" placeholder="Ex: Spikevax">
+    </div>
+    <div class="form-field">
+      <label>Fabricante</label>
+      <input type="text" id="newVaccineMfr" placeholder="Ex: Moderna">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="form-field">
+        <label>Temp. mínima (°C) *</label>
+        <input type="number" id="newVaccineMin" placeholder="-25" step="0.1">
+      </div>
+      <div class="form-field">
+        <label>Temp. máxima (°C) *</label>
+        <input type="number" id="newVaccineMax" placeholder="-15" step="0.1">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modalNewVaccine')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmNewVaccine()">Cadastrar Produto</button>
+    </div>
+  </div>
+</div>
+
+<!-- New Batch Modal -->
+<div class="modal-overlay" id="modalNewBatch">
+  <div class="modal">
+    <h3>Novo Lote</h3>
+    <p class="modal-sub">Registre um novo lote de produto para uso em viagens.</p>
+    <div class="form-field">
+      <label>Produto *</label>
+      <select id="newBatchVaccine"></select>
+    </div>
+    <div class="form-field">
+      <label>Código do lote *</label>
+      <input type="text" id="newBatchCode" placeholder="Ex: MOD-2026-A01">
+    </div>
+    <div class="form-field">
+      <label>Data de validade *</label>
+      <input type="date" id="newBatchExpiry">
+    </div>
+    <div class="form-field">
+      <label>Quantidade (unidades) *</label>
+      <input type="number" id="newBatchQty" placeholder="Ex: 5000" min="1">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modalNewBatch')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmNewBatch()">Cadastrar Lote</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ SCRIPT ════════════════════════════════════════════════ -->
 <script>
 // ── State ────────────────────────────────────────────────────
@@ -562,7 +660,7 @@ function showSection(name) {
   document.getElementById('sectionDashboard').style.display = name === 'dashboard' ? '' : 'none';
   {% if user_role == 'admin' %}
   document.getElementById('sectionAdmin').style.display = name === 'admin' ? '' : 'none';
-  if (name === 'admin') { refreshAdminPending(); refreshAdminTrips(); }
+  if (name === 'admin') { refreshAdminPending(); refreshAdminTrips(); refreshAdminVaccines(); refreshAdminBatches(); }
   {% endif %}
   document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
   event.currentTarget.classList.add('active');
@@ -900,6 +998,93 @@ function closeTrip(tripId) {
   if (!confirm(`Encerrar viagem #${tripId}?`)) return;
   fetch(`/api/admin/trips/${tripId}/close`, { method: 'POST' })
     .then(() => { refreshAdminTrips(); refreshTrips(); });
+}
+
+function refreshAdminVaccines() {
+  fetch('/api/admin/vaccines').then(r => r.json()).then(data => {
+    const body = document.getElementById('vaccinesBody');
+    if (!body) return;
+    if (!data.length) {
+      body.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:20px">Nenhum produto cadastrado</td></tr>';
+      return;
+    }
+    body.innerHTML = data.map(v => `<tr>
+      <td>${v.name}</td>
+      <td>${v.manufacturer || '<span style="color:var(--muted)">—</span>'}</td>
+      <td>${v.min_temp}°C → ${v.max_temp}°C</td>
+    </tr>`).join('');
+  }).catch(() => {});
+}
+
+function refreshAdminBatches() {
+  fetch('/api/admin/batches').then(r => r.json()).then(data => {
+    const body = document.getElementById('batchesBody');
+    if (!body) return;
+    if (!data.length) {
+      body.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:20px">Nenhum lote cadastrado</td></tr>';
+      return;
+    }
+    body.innerHTML = data.map(b => `<tr>
+      <td style="font-family:monospace;font-size:.78rem">${b.batch_code}</td>
+      <td>${b.vaccine_name}</td>
+      <td>${b.expiration_date ? b.expiration_date.split('T')[0] : '—'}</td>
+      <td>${b.quantity_units?.toLocaleString('pt-BR')}</td>
+    </tr>`).join('');
+  }).catch(() => {});
+}
+
+function showNewVaccineModal() {
+  document.getElementById('newVaccineName').value = '';
+  document.getElementById('newVaccineMfr').value = '';
+  document.getElementById('newVaccineMin').value = '';
+  document.getElementById('newVaccineMax').value = '';
+  document.getElementById('modalNewVaccine').classList.add('open');
+}
+
+function confirmNewVaccine() {
+  const name = document.getElementById('newVaccineName').value.trim();
+  const mfr  = document.getElementById('newVaccineMfr').value.trim();
+  const min  = document.getElementById('newVaccineMin').value;
+  const max  = document.getElementById('newVaccineMax').value;
+  if (!name || min === '' || max === '') return alert('Preencha nome e temperaturas.');
+  fetch('/api/admin/vaccines', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, manufacturer: mfr, min_temp: parseFloat(min), max_temp: parseFloat(max) })
+  }).then(r => r.json()).then(res => {
+    if (res.error) return alert(res.error);
+    closeModal('modalNewVaccine');
+    refreshAdminVaccines();
+  });
+}
+
+function showNewBatchModal() {
+  fetch('/api/admin/vaccines').then(r => r.json()).then(vaccines => {
+    document.getElementById('newBatchVaccine').innerHTML = vaccines.map(v =>
+      `<option value="${v.vaccine_id}">${v.name}${v.manufacturer ? ' — ' + v.manufacturer : ''}</option>`
+    ).join('');
+    document.getElementById('newBatchCode').value = '';
+    document.getElementById('newBatchExpiry').value = '';
+    document.getElementById('newBatchQty').value = '';
+    document.getElementById('modalNewBatch').classList.add('open');
+  });
+}
+
+function confirmNewBatch() {
+  const vaccineId = document.getElementById('newBatchVaccine').value;
+  const code      = document.getElementById('newBatchCode').value.trim();
+  const expiry    = document.getElementById('newBatchExpiry').value;
+  const qty       = document.getElementById('newBatchQty').value;
+  if (!vaccineId || !code || !expiry || !qty) return alert('Preencha todos os campos.');
+  fetch('/api/admin/batches', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ vaccine_id: parseInt(vaccineId), batch_code: code, expiration_date: expiry, quantity_units: parseInt(qty) })
+  }).then(r => r.json()).then(res => {
+    if (res.error) return alert(res.error);
+    closeModal('modalNewBatch');
+    refreshAdminBatches();
+  });
 }
 
 function closeModal(id) {

@@ -4,6 +4,8 @@ import logging
 import os
 import io
 import base64
+import hmac
+import hashlib
 from datetime import datetime, timezone
 from functools import wraps
 
@@ -34,6 +36,7 @@ MQTT_PORT     = int(os.getenv("MQTT_PORT", "1883"))
 MQTT_CA_CERT  = os.getenv("MQTT_CA_CERT", "")
 MQTT_USERNAME = os.getenv("MQTT_USERNAME", "")
 MQTT_PASSWORD = os.getenv("MQTT_PASSWORD", "")
+HMAC_KEY      = os.getenv("HMAC_KEY", "v@ccine-hmac-key-2026-xK9mP7qR!")
 
 TOPIC_READINGS  = "vaccines/readings"
 TOPIC_HEARTBEAT = "vaccines/heartbeat"
@@ -225,6 +228,10 @@ def login():
         conn.close()
 
         if row and bcrypt.checkpw(password, row["password_hash"].encode()):
+            # Clear any leftover state from a previous incomplete login attempt
+            session.pop("pending_user_id", None)
+            session.pop("pending_user_email", None)
+            session.pop("totp_setup_secret", None)
             session["pending_user_id"]    = row["user_id"]
             session["pending_user_email"] = row["email"]
             audit("login_password_ok", details={"email": email}, ip=request.remote_addr)
@@ -247,21 +254,24 @@ def setup_totp():
     user_id = session["pending_user_id"]
     email   = session.get("pending_user_email", "user")
 
-    if request.method == "GET":
-        secret = pyotp.random_base32()
-        session["totp_setup_secret"] = secret
-        uri = pyotp.totp.TOTP(secret).provisioning_uri(
-            name=email, issuer_name="VaccineTransport IoT"
-        )
-        img = qrcode.make(uri)
-        buf = io.BytesIO()
-        img.save(buf, format="PNG")
-        qr_b64 = base64.b64encode(buf.getvalue()).decode()
-        return render_template("setup_totp.html", qr_b64=qr_b64, secret=secret)
+    # Reuse existing secret if already generated (avoid invalidating a scanned QR on refresh)
+    if "totp_setup_secret" not in session:
+        session["totp_setup_secret"] = pyotp.random_base32()
 
-    code   = request.form.get("code", "")
-    secret = session.get("totp_setup_secret", "")
-    if pyotp.TOTP(secret).verify(code, valid_window=1):
+    secret = session["totp_setup_secret"]
+    uri = pyotp.totp.TOTP(secret).provisioning_uri(
+        name=email, issuer_name="VaccineTransport IoT"
+    )
+    img = qrcode.make(uri)
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    qr_b64 = base64.b64encode(buf.getvalue()).decode()
+
+    if request.method == "GET":
+        return render_template("setup_totp.html", qr_b64=qr_b64, secret=secret, email=email)
+
+    code = request.form.get("code", "")
+    if pyotp.TOTP(secret).verify(code, valid_window=5):
         conn = db()
         cur  = conn.cursor()
         cur.execute("UPDATE users SET totp_secret = %s WHERE user_id = %s", (secret, user_id))
@@ -274,7 +284,7 @@ def setup_totp():
 
     audit("totp_setup_failed", user_id=user_id, ip=request.remote_addr)
     return render_template("setup_totp.html",
-                           qr_b64=None, secret=secret,
+                           qr_b64=qr_b64, secret=secret, email=email,
                            error="Código inválido. Tente novamente.")
 
 
@@ -289,7 +299,7 @@ def verify_totp():
         user_id = session["pending_user_id"]
         user    = load_user(user_id)
 
-        if user and user.totp_secret and pyotp.TOTP(user.totp_secret).verify(code, valid_window=1):
+        if user and user.totp_secret and pyotp.TOTP(user.totp_secret).verify(code, valid_window=5):
             login_user(user, remember=False)
             session.pop("pending_user_id", None)
             session.pop("pending_user_email", None)
@@ -335,19 +345,35 @@ def on_message(client, userdata, msg):
 
     try:
         payload = json.loads(msg.payload.decode())
-    except json.JSONDecodeError:
-        logging.error(f"MQTT: Payload inválido em {msg.topic}")
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        logging.warning(f"MQTT: Payload descartado (JSON inválido/truncado) em {msg.topic}")
         return
 
     device_serial = payload.get("device_id")
     if not device_serial:
         return
 
-    # Heartbeat — só atualiza last_seen e auto-descobre
+    # Heartbeat — não verifica HMAC (sem dados críticos)
     if msg.topic == TOPIC_HEARTBEAT:
         ensure_device_exists(device_serial)
         update_device_last_seen(device_serial)
         return
+
+    # --- Verificação HMAC ---
+    received_hmac = payload.get("hmac", "")
+    signed_text   = payload.get("signed", "")
+    if received_hmac and signed_text:
+        # Verifica o HMAC sobre o texto exato que o ESP32 assinou
+        expected_hmac = hmac.new(
+            HMAC_KEY.encode(), signed_text.encode(), hashlib.sha256
+        ).hexdigest()
+        if not hmac.compare_digest(received_hmac, expected_hmac):
+            logging.warning(f"MQTT: HMAC inválido de [{device_serial}] — mensagem rejeitada.")
+            audit("hmac_failed", details={"device_id": device_serial})
+            return
+        logging.debug(f"MQTT: HMAC verificado OK [{device_serial}]")
+    else:
+        logging.warning(f"MQTT: Mensagem sem HMAC/signed de [{device_serial}] — aceita (modo compatibilidade).")
 
     # --- Leitura de sensor ---
     # 1. Auto-descobrir / buscar dispositivo
@@ -378,10 +404,18 @@ def on_message(client, userdata, msg):
         return
 
     raw_ts = payload.get("timestamp") or ""
-    if not raw_ts or raw_ts.startswith("2000-00-00") or raw_ts.startswith("2000-01-01"):
+    timestamp = None
+    if raw_ts:
+        normalized = raw_ts.replace("T", " ").replace("Z", "").split(".")[0]
+        try:
+            parsed = datetime.strptime(normalized, "%Y-%m-%d %H:%M:%S")
+            # Reject GPS default dates (no fix): month=0, day=0, or year before 2020
+            if parsed.year >= 2020 and parsed.month >= 1 and parsed.day >= 1:
+                timestamp = normalized
+        except ValueError:
+            pass
+    if not timestamp:
         timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
-    else:
-        timestamp = raw_ts.replace("T", " ").replace("Z", "").split(".")[0]
 
     try:
         conn = db()
@@ -907,6 +941,99 @@ def admin_batches():
     cur.close()
     conn.close()
     return jsonify(data)
+
+
+@app.route("/api/admin/vaccines", methods=["GET"])
+@login_required
+@require_permission("manage_users")
+def admin_vaccines():
+    """Lista todos os produtos cadastrados."""
+    conn = db()
+    cur  = conn.cursor(dictionary=True)
+    cur.execute("SELECT vaccine_id, name, manufacturer, min_temp, max_temp FROM vaccines ORDER BY name")
+    data = cur.fetchall()
+    cur.close()
+    conn.close()
+    return jsonify(data)
+
+
+@app.route("/api/admin/vaccines", methods=["POST"])
+@login_required
+@require_permission("manage_users")
+def admin_create_vaccine():
+    """Cadastra um novo produto farmacêutico."""
+    body         = request.get_json(force=True)
+    name         = body.get("name", "").strip()
+    manufacturer = body.get("manufacturer", "").strip()
+    min_temp     = body.get("min_temp")
+    max_temp     = body.get("max_temp")
+
+    if not name:
+        return jsonify({"error": "Nome do produto é obrigatório"}), 400
+    if min_temp is None or max_temp is None:
+        return jsonify({"error": "Temperaturas mínima e máxima são obrigatórias"}), 400
+    try:
+        min_temp = float(min_temp)
+        max_temp = float(max_temp)
+    except (ValueError, TypeError):
+        return jsonify({"error": "Temperaturas devem ser valores numéricos"}), 400
+    if min_temp >= max_temp:
+        return jsonify({"error": "Temperatura mínima deve ser menor que a máxima"}), 400
+
+    conn = db()
+    cur  = conn.cursor()
+    cur.execute(
+        "INSERT INTO vaccines (name, manufacturer, min_temp, max_temp) VALUES (%s, %s, %s, %s)",
+        (name, manufacturer or None, min_temp, max_temp)
+    )
+    conn.commit()
+    vaccine_id = cur.lastrowid
+    cur.close()
+    conn.close()
+
+    audit("vaccine_created", target_table="vaccines", target_id=vaccine_id,
+          user_id=current_user.id, ip=request.remote_addr,
+          details={"name": name, "manufacturer": manufacturer, "min_temp": min_temp, "max_temp": max_temp})
+    return jsonify({"message": "Produto cadastrado", "vaccine_id": vaccine_id}), 201
+
+
+@app.route("/api/admin/batches", methods=["POST"])
+@login_required
+@require_permission("create_trip")
+def admin_create_batch():
+    """Cadastra um novo lote de produto."""
+    body            = request.get_json(force=True)
+    vaccine_id      = body.get("vaccine_id")
+    batch_code      = body.get("batch_code", "").strip()
+    expiration_date = body.get("expiration_date", "").strip()
+    quantity_units  = body.get("quantity_units")
+
+    if not all([vaccine_id, batch_code, expiration_date, quantity_units]):
+        return jsonify({"error": "Todos os campos são obrigatórios"}), 400
+    try:
+        quantity_units = int(quantity_units)
+    except (ValueError, TypeError):
+        return jsonify({"error": "Quantidade deve ser um número inteiro"}), 400
+
+    conn = db()
+    cur  = conn.cursor()
+    try:
+        cur.execute(
+            "INSERT INTO vaccine_batch (vaccine_id, batch_code, expiration_date, quantity_units) VALUES (%s, %s, %s, %s)",
+            (vaccine_id, batch_code, expiration_date, quantity_units)
+        )
+        conn.commit()
+        batch_id = cur.lastrowid
+    except mysql.connector.IntegrityError:
+        cur.close(); conn.close()
+        return jsonify({"error": f"Código de lote '{batch_code}' já existe"}), 409
+    cur.close()
+    conn.close()
+
+    audit("batch_created", target_table="vaccine_batch", target_id=batch_id,
+          user_id=current_user.id, ip=request.remote_addr,
+          details={"vaccine_id": vaccine_id, "batch_code": batch_code, "quantity_units": quantity_units})
+    return jsonify({"message": "Lote cadastrado", "batch_id": batch_id}), 201
 
 
 # -------------------------------------------------------
