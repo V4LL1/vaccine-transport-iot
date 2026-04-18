@@ -724,6 +724,69 @@ def devices():
     return jsonify(data)
 
 
+@app.route("/api/alerts/poll")
+@login_required
+def alerts_poll():
+    """Retorna novos alertas desde 'since' (ISO timestamp).
+    - temp_violations: todos os roles, scoped por empresa e trip_id opcional
+    - hmac_attacks: apenas admin e superadmin
+    """
+    since   = request.args.get("since", "")
+    trip_id = request.args.get("trip_id", type=int)
+
+    # fallback: últimos 15s se since não fornecido
+    if not since:
+        since = (datetime.now(timezone.utc).replace(microsecond=0)
+                 .strftime("%Y-%m-%d %H:%M:%S"))
+
+    result = {"temp_violations": [], "hmac_attacks": []}
+
+    try:
+        conn = db()
+        cur  = conn.cursor(dictionary=True)
+
+        # — Violações de temperatura (todos os roles, scoped por empresa) —
+        scope, params = company_where("v")
+        trip_filter   = "AND r.trip_id = %s" if trip_id else ""
+        trip_params   = [trip_id] if trip_id else []
+
+        cur.execute(f"""
+            SELECT r.reading_id, r.timestamp, r.temperature,
+                   v.min_temp, v.max_temp, v.name AS vaccine_name,
+                   t.trip_id
+            FROM readings r
+            JOIN trips t         ON r.trip_id   = t.trip_id
+            JOIN vaccine_batch b ON r.batch_id  = b.batch_id
+            JOIN vaccines v      ON b.vaccine_id = v.vaccine_id
+            WHERE ({scope})
+              AND r.timestamp > %s
+              AND (r.temperature < v.min_temp OR r.temperature > v.max_temp)
+              {trip_filter}
+            ORDER BY r.timestamp DESC
+            LIMIT 10
+        """, params + [since] + trip_params)
+        result["temp_violations"] = cur.fetchall()
+
+        # — Ataques HMAC (somente admin e superadmin) —
+        if current_user.role in ("admin", "superadmin"):
+            cur.execute("""
+                SELECT log_id, created_at, details
+                FROM audit_log
+                WHERE action = 'hmac_failed'
+                  AND created_at > %s
+                ORDER BY created_at DESC
+                LIMIT 10
+            """, (since,))
+            result["hmac_attacks"] = cur.fetchall()
+
+        cur.close()
+        conn.close()
+    except Exception as e:
+        logging.warning(f"alerts_poll error: {e}")
+
+    return jsonify(result)
+
+
 @app.route("/api/status")
 @login_required
 def status():

@@ -281,6 +281,36 @@ tr:hover td { background: var(--surface2); }
 .tag-warn { background: rgba(240,165,0,.12);   color: var(--warn); }
 .tag-err  { background: rgba(246,96,96,.12);   color: var(--danger); }
 
+/* ── Toast notifications ─────────────────────────────────── */
+#toastContainer {
+  position: fixed; bottom: 20px; right: 20px;
+  display: flex; flex-direction: column-reverse; gap: 8px;
+  z-index: 9999; pointer-events: none;
+}
+.toast {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 11px 14px; border-radius: 10px;
+  font-size: .78rem; max-width: 300px; pointer-events: all;
+  animation: toastIn .25s ease; box-shadow: 0 4px 16px rgba(0,0,0,.35);
+  border-left: 3px solid transparent;
+}
+.toast-temp  { background: #1e1612; border-color: var(--warn); color: #f0c87a; }
+.toast-hmac  { background: #1a1018; border-color: var(--danger); color: #f06060; }
+.toast-icon  { font-size: 1rem; line-height: 1; margin-top: 1px; }
+.toast-body  { flex: 1; }
+.toast-title { font-weight: 700; margin-bottom: 2px; }
+.toast-msg   { color: rgba(255,255,255,.65); line-height: 1.35; }
+.toast-close {
+  background: none; border: none; color: rgba(255,255,255,.4);
+  cursor: pointer; font-size: .9rem; padding: 0; margin-left: 4px;
+  pointer-events: all;
+}
+.toast-close:hover { color: #fff; }
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
 /* ── Admin ───────────────────────────────────────────────── */
 .admin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 @media (max-width: 880px) { .admin-grid { grid-template-columns: 1fr; } }
@@ -337,6 +367,8 @@ tr:hover td { background: var(--surface2); }
 </style>
 </head>
 <body>
+
+<div id="toastContainer"></div>
 
 <!-- ══ SIDEBAR ══════════════════════════════════════════════ -->
 <aside class="sidebar">
@@ -1308,18 +1340,55 @@ function timeAgo(isoStr) {
   return `há ${Math.floor(diff/3600)}h`;
 }
 
+// ── Toast notifications ───────────────────────────────────────
+let lastAlertCheck = new Date().toISOString();
+
+function showToast(type, title, msg) {
+  const container = document.getElementById('toastContainer');
+  const t = document.createElement('div');
+  t.className = `toast toast-${type}`;
+  const icon = type === 'hmac' ? '⚠️' : '🌡️';
+  t.innerHTML = `
+    <span class="toast-icon">${icon}</span>
+    <div class="toast-body">
+      <div class="toast-title">${title}</div>
+      <div class="toast-msg">${msg}</div>
+    </div>
+    <button class="toast-close" onclick="this.closest('.toast').remove()">✕</button>`;
+  container.appendChild(t);
+  setTimeout(() => t.remove(), 6000);
+}
+
+function pollAlerts() {
+  const tripId = currentTripId;
+  if (!tripId) return;
+  const url = `/api/alerts/poll?since=${encodeURIComponent(lastAlertCheck)}&trip_id=${tripId}`;
+  lastAlertCheck = new Date().toISOString();
+  fetch(url).then(r => r.json()).then(data => {
+    (data.temp_violations || []).forEach(a => {
+      showToast('temp', 'Violação de temperatura', `${a.device} — ${a.temperature}°C às ${a.time}`);
+    });
+    {% if user_role in ('admin', 'superadmin') %}
+    (data.hmac_attacks || []).forEach(a => {
+      showToast('hmac', 'Ataque HMAC detectado', `Dispositivo: ${a.device_id} às ${a.time}`);
+    });
+    {% endif %}
+  }).catch(() => {});
+}
+
 // ── Init & refresh loop ───────────────────────────────────────
 initMap();
 refreshStatus();
 refreshDevices();
 refreshTrips();
-{% if user_role == 'admin' %}refreshAdminPending();{% endif %}
+{% if user_role in ('admin', 'superadmin') %}refreshAdminPending();{% endif %}
 
 setInterval(() => {
   refreshStatus();
   refreshDevices();
   if (currentTripId) refreshChartAndMap(currentTripId);
-  {% if user_role == 'admin' %}refreshAdminPending();{% endif %}
+  {% if user_role in ('admin', 'superadmin') %}refreshAdminPending();{% endif %}
+  pollAlerts();
 }, 10000);
 </script>
 </body>
