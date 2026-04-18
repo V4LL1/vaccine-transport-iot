@@ -311,6 +311,62 @@ tr:hover td { background: var(--surface2); }
   to   { opacity: 1; transform: translateX(0); }
 }
 
+/* ── Debug console ──────────────────────────────────────── */
+.debug-console {
+  background: #0a0a0a; border: 1px solid var(--border);
+  border-radius: 10px; padding: 0; overflow: hidden;
+  font-family: 'Fira Mono', 'Cascadia Code', monospace; font-size: .78rem;
+}
+.debug-console-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 14px; background: var(--surface2); border-bottom: 1px solid var(--border);
+}
+.debug-console-bar span { color: var(--muted); font-size: .72rem; }
+.debug-console-inner {
+  height: 340px; overflow-y: auto; padding: 8px 0;
+}
+.log-row {
+  display: grid; grid-template-columns: 62px 76px 1fr;
+  gap: 6px; padding: 3px 14px; line-height: 1.5;
+  border-left: 3px solid transparent;
+}
+.log-row:hover { background: rgba(255,255,255,.03); }
+.log-row.lvl-info     { border-color: #3ECF8E33; }
+.log-row.lvl-warn     { border-color: #f0a50066; color: #f0c87a; }
+.log-row.lvl-security { border-color: var(--danger); background: rgba(246,96,96,.06); color: #f09090; }
+.log-row.lvl-error    { border-color: var(--danger); color: var(--danger); }
+.log-ts   { color: var(--muted2); font-size: .72rem; padding-top: 2px; }
+.log-tag  { font-size: .68rem; font-weight: 700; letter-spacing: .04em;
+            padding: 1px 6px; border-radius: 4px; align-self: start;
+            text-align: center; }
+.tag-info     { background: rgba(62,207,142,.12); color: var(--accent); }
+.tag-warn     { background: rgba(240,165,0,.12);   color: var(--warn); }
+.tag-security { background: rgba(246,96,96,.15);   color: var(--danger); }
+.tag-error    { background: rgba(246,96,96,.15);   color: var(--danger); }
+.log-msg  { color: var(--text); word-break: break-all; }
+
+.sec-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: 8px; font-size: .78rem; font-weight: 600;
+  background: rgba(62,207,142,.1); color: var(--accent);
+  border: 1px solid rgba(62,207,142,.2);
+}
+.sec-badge.inactive { background: rgba(246,96,96,.1); color: var(--danger);
+                      border-color: rgba(246,96,96,.2); }
+.debug-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+@media (max-width: 880px) { .debug-grid { grid-template-columns: 1fr; } }
+.info-row { display: flex; justify-content: space-between; align-items: center;
+            padding: 7px 0; border-bottom: 1px solid var(--border); font-size: .8rem; }
+.info-row:last-child { border-bottom: none; }
+.info-row .label { color: var(--muted); }
+.info-val-ok   { color: var(--accent); font-weight: 600; }
+.info-val-warn { color: var(--warn);   font-weight: 600; }
+.info-val-err  { color: var(--danger); font-weight: 600; }
+.conn-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+            margin-right: 5px; }
+.conn-dot.on  { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+.conn-dot.off { background: var(--danger); }
+
 /* ── Admin ───────────────────────────────────────────────── */
 .admin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 @media (max-width: 880px) { .admin-grid { grid-template-columns: 1fr; } }
@@ -402,6 +458,11 @@ tr:hover td { background: var(--surface2); }
       {% if user_role in ('admin', 'superadmin') %}
       <a class="nav-item" href="/api/audit" target="_blank">
         <span class="nav-icon">🔍</span> Audit Log
+      </a>
+      {% endif %}
+      {% if user_role == 'superadmin' %}
+      <a class="nav-item" onclick="showSection('debug')">
+        <span class="nav-icon">🛠</span> Debug
       </a>
       {% endif %}
     </div>
@@ -618,6 +679,80 @@ tr:hover td { background: var(--surface2); }
     </div>
     {% endif %}
 
+    <!-- ── Debug Section (superadmin only) ──────────────────── -->
+    {% if user_role == 'superadmin' %}
+    <div id="sectionDebug" style="display:none">
+
+      <!-- Badges de segurança ativa -->
+      <div class="panel" style="margin-bottom:16px">
+        <div class="panel-header"><h3>🔐 Camadas de Segurança Ativas</h3></div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;padding:4px 0">
+          <span class="sec-badge">🔒 TLS 1.2+  MQTT</span>
+          <span class="sec-badge">🛡 HMAC-SHA256</span>
+          <span class="sec-badge">📱 TOTP MFA</span>
+          <span class="sec-badge">👥 RBAC Multi-Empresa</span>
+          <span class="sec-badge">📋 Audit Log</span>
+          <span class="sec-badge">🔑 bcrypt (rounds=12)</span>
+          <span class="sec-badge">🔄 Nonce Anti-Replay</span>
+        </div>
+      </div>
+
+      <div class="debug-grid">
+
+        <!-- Info do broker / conexão -->
+        <div class="panel">
+          <div class="panel-header"><h3>🌐 Conexão MQTT</h3></div>
+          <div id="debugSystemInfo">
+            <div class="info-row"><span class="label">Carregando…</span></div>
+          </div>
+        </div>
+
+        <!-- Simulador de ataques -->
+        <div class="panel">
+          <div class="panel-header"><h3>⚡ Simulador de Ataques</h3></div>
+          <p style="font-size:.78rem;color:var(--muted);margin-bottom:14px;line-height:1.5">
+            Simula uma mensagem MQTT com HMAC inválido.<br>
+            O Flask rejeita, registra no audit_log e dispara<br>
+            o toast de ataque em todos os admins conectados.
+          </p>
+          <div class="form-field">
+            <label>Device ID (atacante)</label>
+            <input type="text" id="dbgAttackDevice" value="DEMO-ATTACKER-001">
+          </div>
+          <button class="btn btn-danger" style="width:100%;margin-top:4px" onclick="simulateAttack()">
+            ⚡ Simular Ataque HMAC
+          </button>
+          <div id="dbgAttackResult" style="margin-top:10px;font-size:.78rem;display:none"></div>
+        </div>
+
+      </div><!-- /debug-grid -->
+
+      <!-- Console ao vivo -->
+      <div class="panel">
+        <div class="debug-console-bar" style="border-radius:0;background:transparent;padding:0;margin-bottom:10px">
+          <div class="panel-header" style="margin:0;padding:0;border:none;background:none">
+            <h3>📡 Log MQTT ao Vivo</h3>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-ghost btn-sm" id="dbgPauseBtn" onclick="toggleDebugPause()">⏸ Pausar</button>
+              <button class="btn btn-ghost btn-sm" onclick="clearDebugLog()">🗑 Limpar</button>
+            </div>
+          </div>
+        </div>
+        <div class="debug-console">
+          <div class="debug-console-inner" id="debugLogInner">
+            <div class="log-row" style="color:var(--muted2);padding:10px 14px">
+              Aguardando eventos MQTT…
+            </div>
+          </div>
+        </div>
+        <p style="font-size:.7rem;color:var(--muted2);margin-top:6px">
+          Atualizado automaticamente a cada 2s. Mostra últimos 200 eventos em memória.
+        </p>
+      </div>
+
+    </div><!-- /sectionDebug -->
+    {% endif %}
+
   </main>
 </div>
 
@@ -814,9 +949,15 @@ function showSection(name) {
     if (IS_SUPERADMIN) refreshAdminCompanies();
   }
   {% endif %}
+  {% if user_role == 'superadmin' %}
+  document.getElementById('sectionDebug').style.display = name === 'debug' ? '' : 'none';
+  if (name === 'debug') { refreshDebugSystem(); startDebugLog(); }
+  else { stopDebugLog(); }
+  {% endif %}
   document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
   event.currentTarget.classList.add('active');
-  document.getElementById('topbarTitle').textContent = name === 'admin' ? 'Administração' : 'Dashboard';
+  const titles = { dashboard: 'Dashboard', admin: 'Administração', debug: '🛠 Debug' };
+  document.getElementById('topbarTitle').textContent = titles[name] || 'Dashboard';
 }
 
 // ── Map init ──────────────────────────────────────────────────
@@ -1366,15 +1507,123 @@ function pollAlerts() {
   lastAlertCheck = new Date().toISOString();
   fetch(url).then(r => r.json()).then(data => {
     (data.temp_violations || []).forEach(a => {
-      showToast('temp', 'Violação de temperatura', `${a.device} — ${a.temperature}°C às ${a.time}`);
+      showToast('temp', 'Violação de temperatura', `${a.vaccine_name} — ${a.temperature}°C às ${a.timestamp}`);
     });
     {% if user_role in ('admin', 'superadmin') %}
     (data.hmac_attacks || []).forEach(a => {
-      showToast('hmac', 'Ataque HMAC detectado', `Dispositivo: ${a.device_id} às ${a.time}`);
+      const dev = a.details ? (JSON.parse(a.details).device_id || '?') : '?';
+      showToast('hmac', 'Ataque HMAC detectado', `Dispositivo: ${dev} às ${a.created_at}`);
     });
     {% endif %}
   }).catch(() => {});
 }
+
+// ── Debug tab ─────────────────────────────────────────────────
+{% if user_role == 'superadmin' %}
+let _debugLogTimer = null;
+let _debugPaused   = false;
+let _lastLogCount  = 0;   // detecta novos eventos sem re-renderizar tudo
+
+const LOG_TAG = {
+  info:     '<span class="log-tag tag-info">INFO</span>',
+  warn:     '<span class="log-tag tag-warn">WARN</span>',
+  security: '<span class="log-tag tag-security">ATAQUE</span>',
+  error:    '<span class="log-tag tag-error">ERRO</span>',
+};
+
+function startDebugLog() {
+  if (_debugLogTimer) return;
+  refreshDebugLog();
+  _debugLogTimer = setInterval(refreshDebugLog, 2000);
+}
+
+function stopDebugLog() {
+  clearInterval(_debugLogTimer);
+  _debugLogTimer = null;
+}
+
+function toggleDebugPause() {
+  _debugPaused = !_debugPaused;
+  document.getElementById('dbgPauseBtn').textContent = _debugPaused ? '▶ Retomar' : '⏸ Pausar';
+}
+
+function refreshDebugLog() {
+  if (_debugPaused) return;
+  fetch('/api/debug/log').then(r => r.json()).then(entries => {
+    if (entries.length === _lastLogCount) return;   // nada novo
+    _lastLogCount = entries.length;
+    const inner = document.getElementById('debugLogInner');
+    if (!entries.length) {
+      inner.innerHTML = '<div class="log-row" style="color:var(--muted2);padding:10px 14px">Sem eventos.</div>';
+      return;
+    }
+    inner.innerHTML = entries.map(e => {
+      const tag = LOG_TAG[e.level] || LOG_TAG.info;
+      const extra = e.data && Object.keys(e.data).length
+        ? `<br><span style="font-size:.7rem;color:var(--muted2)">${JSON.stringify(e.data)}</span>`
+        : '';
+      return `<div class="log-row lvl-${e.level}">
+        <span class="log-ts">${e.ts}</span>
+        ${tag}
+        <span class="log-msg">${e.msg}${extra}</span>
+      </div>`;
+    }).join('');
+  }).catch(() => {});
+}
+
+function clearDebugLog() {
+  fetch('/api/debug/clear-log', { method: 'POST' })
+    .then(() => { _lastLogCount = 0; refreshDebugLog(); });
+}
+
+function refreshDebugSystem() {
+  fetch('/api/debug/system').then(r => r.json()).then(d => {
+    const m = d.mqtt, s = d.security, db = d.database;
+    const connDot = m.connected
+      ? '<span class="conn-dot on"></span><span class="info-val-ok">Conectado</span>'
+      : '<span class="conn-dot off"></span><span class="info-val-err">Desconectado</span>';
+    document.getElementById('debugSystemInfo').innerHTML = `
+      <div class="info-row"><span class="label">Broker</span><span>${m.broker}</span></div>
+      <div class="info-row"><span class="label">Porta</span><span>${m.port} (TLS)</span></div>
+      <div class="info-row"><span class="label">Modo TLS</span><span style="font-size:.72rem">${m.tls_mode}</span></div>
+      <div class="info-row"><span class="label">Usuário MQTT</span><span>${m.user}</span></div>
+      <div class="info-row"><span class="label">Estado</span><span>${connDot}</span></div>
+      <div class="info-row"><span class="label">Última mensagem</span>
+        <span>${m.last_message ? m.last_message.replace('T',' ').slice(0,19)+' UTC' : '—'}</span></div>
+      <div class="info-row"><span class="label">HMAC</span>
+        <span class="info-val-ok">${s.hmac_algorithm} ✓</span></div>
+      <div class="info-row"><span class="label">Chave HMAC</span>
+        <span>${s.hmac_key_len} caracteres</span></div>
+      <div class="info-row"><span class="label">MFA</span>
+        <span class="info-val-ok">${s.totp_algorithm} ✓</span></div>
+      <div class="info-row"><span class="label">bcrypt</span>
+        <span class="info-val-ok">rounds=${s.bcrypt_rounds} ✓</span></div>
+      <div class="info-row"><span class="label">MySQL</span>
+        <span class="${db.connected ? 'info-val-ok' : 'info-val-err'}">${db.connected ? 'Conectado ✓' : 'Erro ✗'}</span></div>
+      <div class="info-row"><span class="label">Python</span><span>${d.server.python}</span></div>
+    `;
+  }).catch(() => {});
+}
+
+function simulateAttack() {
+  const device = document.getElementById('dbgAttackDevice').value.trim() || 'DEMO-ATTACKER-001';
+  const res = document.getElementById('dbgAttackResult');
+  fetch('/api/debug/simulate-attack', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ device_id: device })
+  }).then(r => r.json()).then(d => {
+    res.style.display = '';
+    res.style.color = 'var(--danger)';
+    res.innerHTML = `⚠ ${d.message}<br><strong>Resultado: ${d.result}</strong>`;
+    refreshDebugLog();
+  }).catch(() => {
+    res.style.display = '';
+    res.style.color = 'var(--danger)';
+    res.textContent = 'Erro ao simular ataque.';
+  });
+}
+{% endif %}
 
 // ── Init & refresh loop ───────────────────────────────────────
 initMap();

@@ -18104,3 +18104,13 @@
 1776531120: Opening ipv6 listen socket on port 8883.
 1776531120: Opening ipv4 listen socket on port 8883.
 1776531120: mosquitto version 2.0.22 running
+1776531212: mosquitto version 2.0.22 starting
+1776531212: Config loaded from C:\Users\guilh\Desktop\vaccine-transport-iot\source\broker\mosquitto-tls.conf.
+1776531212: Opening ipv6 listen socket on port 8883.
+1776531212: Opening ipv4 listen socket on port 8883.
+1776531212: mosquitto version 2.0.22 running
+1776536150: mosquitto version 2.0.22 starting
+1776536150: Config loaded from C:\Users\guilh\Desktop\vaccine-transport-iot\source\broker\mosquitto-tls.conf.
+1776536150: Opening ipv6 listen socket on port 8883.
+1776536150: Opening ipv4 listen socket on port 8883.
+1776536150: mosquitto version 2.0.22 running
