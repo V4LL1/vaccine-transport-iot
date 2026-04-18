@@ -43,6 +43,14 @@ TOPIC_HEARTBEAT = "vaccines/heartbeat"
 
 # ======== RBAC — Permissões por role ========
 PERMISSIONS = {
+    "superadmin": {
+        "view_dashboard", "view_readings", "view_devices", "view_alarms",
+        "view_audit",
+        "register_device", "deactivate_device",
+        "manage_trips", "create_trip", "close_trip",
+        "manage_users",
+        "manage_companies",   # exclusivo superadmin
+    },
     "admin": {
         "view_dashboard", "view_readings", "view_devices", "view_alarms",
         "view_audit",
@@ -151,12 +159,18 @@ def get_active_trip_for_device(device_id):
 # Flask-Login — User Model
 # -------------------------------------------------------
 class User(UserMixin):
-    def __init__(self, user_id, name, email, role, totp_secret):
-        self.id          = user_id
-        self.name        = name
-        self.email       = email
-        self.role        = role
-        self.totp_secret = totp_secret
+    def __init__(self, user_id, name, email, role, totp_secret, company_id, company_name):
+        self.id           = user_id
+        self.name         = name
+        self.email        = email
+        self.role         = role
+        self.totp_secret  = totp_secret
+        self.company_id   = company_id
+        self.company_name = company_name
+
+    @property
+    def is_superadmin(self):
+        return self.role == "superadmin"
 
     def has_permission(self, permission):
         return permission in PERMISSIONS.get(self.role, set())
@@ -167,15 +181,29 @@ def load_user(user_id):
     conn = db()
     cur = conn.cursor(dictionary=True)
     cur.execute(
-        "SELECT user_id, name, email, role, totp_secret FROM users WHERE user_id = %s",
+        """SELECT u.user_id, u.name, u.email, u.role, u.totp_secret,
+                  u.company_id, c.name AS company_name
+           FROM users u
+           LEFT JOIN companies c ON u.company_id = c.company_id
+           WHERE u.user_id = %s""",
         (user_id,)
     )
     row = cur.fetchone()
     cur.close()
     conn.close()
     if row:
-        return User(row["user_id"], row["name"], row["email"], row["role"], row["totp_secret"])
+        return User(row["user_id"], row["name"], row["email"], row["role"],
+                    row["totp_secret"], row["company_id"], row.get("company_name"))
     return None
+
+
+def company_where(alias=""):
+    """Returns (sql_fragment, params) to scope queries to current user's company.
+    superadmin sees all rows; admin/operator see only their company."""
+    col = f"{alias}.company_id" if alias else "company_id"
+    if current_user.is_superadmin:
+        return "1=1", []
+    return f"{col} = %s", [current_user.company_id]
 
 
 def require_permission(permission):
@@ -194,12 +222,11 @@ def require_permission(permission):
     return decorator
 
 
-# Mantido para compatibilidade com rotas existentes
 def admin_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        if not current_user.is_authenticated or current_user.role != "admin":
-            return jsonify({"error": "Acesso negado — requer perfil admin"}), 403
+        if not current_user.is_authenticated or current_user.role not in ("admin", "superadmin"):
+            return jsonify({"error": "Acesso negado — requer perfil admin ou superadmin"}), 403
         return f(*args, **kwargs)
     return decorated
 
@@ -489,9 +516,16 @@ def index():
     # Busca a viagem ativa mais recente para pré-selecionar no dashboard
     active_trip_id = None
     try:
+        scope, params = company_where("v")
         conn = db()
         cur  = conn.cursor()
-        cur.execute("SELECT trip_id FROM trips WHERE end_time IS NULL ORDER BY start_time DESC LIMIT 1")
+        cur.execute(f"""
+            SELECT t.trip_id FROM trips t
+            JOIN vaccine_batch b ON t.batch_id  = b.batch_id
+            JOIN vaccines v      ON b.vaccine_id = v.vaccine_id
+            WHERE t.end_time IS NULL AND ({scope})
+            ORDER BY t.start_time DESC LIMIT 1
+        """, params)
         row = cur.fetchone()
         if row:
             active_trip_id = row[0]
@@ -503,6 +537,7 @@ def index():
         "index.html",
         user_name=current_user.name,
         user_role=current_user.role,
+        user_company=current_user.company_name or "—",
         user_permissions=list(PERMISSIONS.get(current_user.role, set())),
         active_trip_id=active_trip_id,
     )
@@ -566,9 +601,10 @@ def trip_readings_page(trip_id):
 @app.route("/api/trips")
 @login_required
 def trips():
+    scope, params = company_where("v")
     conn = db()
     cur  = conn.cursor(dictionary=True)
-    cur.execute("""
+    cur.execute(f"""
         SELECT t.trip_id, t.start_time, t.end_time, t.origin, t.destination,
                IF(t.end_time IS NULL, 'active', 'closed') AS status,
                b.batch_code, v.name AS vaccine_name,
@@ -578,8 +614,9 @@ def trips():
         JOIN vaccine_batch b ON t.batch_id = b.batch_id
         JOIN vaccines v ON b.vaccine_id = v.vaccine_id
         LEFT JOIN devices d ON t.device_id = d.device_id
+        WHERE {scope}
         ORDER BY t.start_time DESC
-    """)
+    """, params)
     data = cur.fetchall()
     cur.close()
     conn.close()
@@ -610,9 +647,10 @@ def readings(trip_id):
 @app.route("/api/readings/recent")
 @login_required
 def recent_readings():
+    scope, params = company_where("v")
     conn = db()
     cur  = conn.cursor(dictionary=True)
-    cur.execute("""
+    cur.execute(f"""
         SELECT r.reading_id, r.timestamp, r.temperature, r.humidity,
                r.latitude, r.longitude,
                t.trip_id, b.batch_code,
@@ -621,9 +659,10 @@ def recent_readings():
         JOIN trips t ON r.trip_id = t.trip_id
         JOIN vaccine_batch b ON r.batch_id = b.batch_id
         JOIN vaccines v ON b.vaccine_id = v.vaccine_id
+        WHERE {scope}
         ORDER BY r.timestamp DESC
         LIMIT 20
-    """)
+    """, params)
     data = cur.fetchall()
     cur.close()
     conn.close()
@@ -633,20 +672,21 @@ def recent_readings():
 @app.route("/api/alarms")
 @login_required
 def alarms():
+    scope, params = company_where("v")
     conn = db()
     cur  = conn.cursor(dictionary=True)
-    cur.execute("""
+    cur.execute(f"""
         SELECT r.reading_id, r.timestamp, r.temperature, r.humidity,
                t.trip_id, b.batch_code, v.name AS vaccine_name,
                v.min_temp, v.max_temp
         FROM readings r
-        JOIN trips t   ON r.trip_id  = t.trip_id
+        JOIN trips t        ON r.trip_id   = t.trip_id
         JOIN vaccine_batch b ON r.batch_id = b.batch_id
-        JOIN vaccines v ON b.vaccine_id = v.vaccine_id
-        WHERE r.temperature < v.min_temp OR r.temperature > v.max_temp
+        JOIN vaccines v     ON b.vaccine_id = v.vaccine_id
+        WHERE ({scope}) AND (r.temperature < v.min_temp OR r.temperature > v.max_temp)
         ORDER BY r.timestamp DESC
         LIMIT 50
-    """)
+    """, params)
     data = cur.fetchall()
     cur.close()
     conn.close()
@@ -656,9 +696,10 @@ def alarms():
 @app.route("/api/devices")
 @login_required
 def devices():
+    scope, params = company_where("d")
     conn = db()
     cur  = conn.cursor(dictionary=True)
-    cur.execute("""
+    cur.execute(f"""
         SELECT d.device_id, d.serial_number, d.name, d.status,
                d.registration_status, d.last_seen,
                u.name AS registered_by_name,
@@ -674,8 +715,9 @@ def devices():
         FROM devices d
         LEFT JOIN users u ON d.registered_by = u.user_id
         LEFT JOIN trips t ON t.device_id = d.device_id AND t.end_time IS NULL
+        WHERE {scope}
         ORDER BY d.registration_status ASC, d.serial_number
-    """)
+    """, params)
     data = cur.fetchall()
     cur.close()
     conn.close()
@@ -732,20 +774,20 @@ def audit_log():
 @login_required
 @require_permission("register_device")
 def admin_pending_devices():
-    """Lista dispositivos descobertos mas não registrados."""
+    scope, params = company_where("d")
     conn = db()
     cur  = conn.cursor(dictionary=True)
-    cur.execute("""
-        SELECT device_id, serial_number, last_seen,
+    cur.execute(f"""
+        SELECT d.device_id, d.serial_number, d.last_seen,
                CASE
-                 WHEN last_seen >= NOW() - INTERVAL 60 SECOND THEN 'online'
-                 WHEN last_seen >= NOW() - INTERVAL 5 MINUTE  THEN 'recent'
+                 WHEN d.last_seen >= NOW() - INTERVAL 60 SECOND THEN 'online'
+                 WHEN d.last_seen >= NOW() - INTERVAL 5 MINUTE  THEN 'recent'
                  ELSE 'offline'
                END AS connectivity
-        FROM devices
-        WHERE registration_status = 'pending'
-        ORDER BY last_seen DESC
-    """)
+        FROM devices d
+        WHERE d.registration_status = 'pending' AND ({scope})
+        ORDER BY d.last_seen DESC
+    """, params)
     data = cur.fetchall()
     cur.close()
     conn.close()
@@ -786,16 +828,18 @@ def admin_register_device(device_id):
         cur.close(); conn.close()
         return jsonify({"error": "Viagem não encontrada ou já encerrada"}), 404
 
-    # Atualiza dispositivo
+    # Atualiza dispositivo — atribui empresa do admin que registrou
+    company_id = None if current_user.is_superadmin else current_user.company_id
     cur.execute("""
         UPDATE devices
         SET name = %s,
             registration_status = 'active',
             status = 'active',
             registered_by = %s,
-            registered_at = NOW()
+            registered_at = NOW(),
+            company_id = COALESCE(company_id, %s)
         WHERE device_id = %s
-    """, (name, current_user.id, device_id))
+    """, (name, current_user.id, company_id, device_id))
 
     # Atribui dispositivo à viagem
     cur.execute(
@@ -847,10 +891,10 @@ def admin_deactivate_device(device_id):
 @login_required
 @require_permission("manage_trips")
 def admin_trips():
-    """Lista todas as viagens com status de atribuição."""
+    scope, params = company_where("v")
     conn = db()
     cur  = conn.cursor(dictionary=True)
-    cur.execute("""
+    cur.execute(f"""
         SELECT t.trip_id, t.start_time, t.end_time, t.origin, t.destination,
                b.batch_code, v.name AS vaccine_name,
                v.min_temp, v.max_temp,
@@ -858,11 +902,12 @@ def admin_trips():
                d.name AS device_name,
                d.registration_status
         FROM trips t
-        JOIN vaccine_batch b ON t.batch_id = b.batch_id
-        JOIN vaccines v ON b.vaccine_id = v.vaccine_id
-        LEFT JOIN devices d ON t.device_id = d.device_id
+        JOIN vaccine_batch b ON t.batch_id  = b.batch_id
+        JOIN vaccines v      ON b.vaccine_id = v.vaccine_id
+        LEFT JOIN devices d  ON t.device_id  = d.device_id
+        WHERE {scope}
         ORDER BY t.start_time DESC
-    """)
+    """, params)
     data = cur.fetchall()
     cur.close()
     conn.close()
@@ -927,16 +972,17 @@ def admin_close_trip(trip_id):
 @login_required
 @require_permission("create_trip")
 def admin_batches():
-    """Lista lotes disponíveis para criação de viagens."""
+    scope, params = company_where("v")
     conn = db()
     cur  = conn.cursor(dictionary=True)
-    cur.execute("""
+    cur.execute(f"""
         SELECT b.batch_id, b.batch_code, b.expiration_date, b.quantity_units,
                v.name AS vaccine_name, v.min_temp, v.max_temp
         FROM vaccine_batch b
         JOIN vaccines v ON b.vaccine_id = v.vaccine_id
+        WHERE {scope}
         ORDER BY v.name, b.batch_code
-    """)
+    """, params)
     data = cur.fetchall()
     cur.close()
     conn.close()
@@ -947,10 +993,15 @@ def admin_batches():
 @login_required
 @require_permission("manage_users")
 def admin_vaccines():
-    """Lista todos os produtos cadastrados."""
     conn = db()
     cur  = conn.cursor(dictionary=True)
-    cur.execute("SELECT vaccine_id, name, manufacturer, min_temp, max_temp FROM vaccines ORDER BY name")
+    cur.execute("""
+        SELECT v.vaccine_id, v.name, v.manufacturer, v.min_temp, v.max_temp,
+               c.name AS company_name
+        FROM vaccines v
+        JOIN companies c ON v.company_id = c.company_id
+        ORDER BY v.name
+    """)
     data = cur.fetchall()
     cur.close()
     conn.close()
@@ -961,15 +1012,18 @@ def admin_vaccines():
 @login_required
 @require_permission("manage_users")
 def admin_create_vaccine():
-    """Cadastra um novo produto farmacêutico."""
     body         = request.get_json(force=True)
     name         = body.get("name", "").strip()
     manufacturer = body.get("manufacturer", "").strip()
     min_temp     = body.get("min_temp")
     max_temp     = body.get("max_temp")
+    # superadmin pode especificar empresa; admin usa a própria
+    company_id   = body.get("company_id") if current_user.is_superadmin else current_user.company_id
 
     if not name:
         return jsonify({"error": "Nome do produto é obrigatório"}), 400
+    if not company_id:
+        return jsonify({"error": "Empresa é obrigatória"}), 400
     if min_temp is None or max_temp is None:
         return jsonify({"error": "Temperaturas mínima e máxima são obrigatórias"}), 400
     try:
@@ -983,8 +1037,8 @@ def admin_create_vaccine():
     conn = db()
     cur  = conn.cursor()
     cur.execute(
-        "INSERT INTO vaccines (name, manufacturer, min_temp, max_temp) VALUES (%s, %s, %s, %s)",
-        (name, manufacturer or None, min_temp, max_temp)
+        "INSERT INTO vaccines (company_id, name, manufacturer, min_temp, max_temp) VALUES (%s, %s, %s, %s, %s)",
+        (company_id, name, manufacturer or None, min_temp, max_temp)
     )
     conn.commit()
     vaccine_id = cur.lastrowid
@@ -993,7 +1047,7 @@ def admin_create_vaccine():
 
     audit("vaccine_created", target_table="vaccines", target_id=vaccine_id,
           user_id=current_user.id, ip=request.remote_addr,
-          details={"name": name, "manufacturer": manufacturer, "min_temp": min_temp, "max_temp": max_temp})
+          details={"name": name, "company_id": company_id})
     return jsonify({"message": "Produto cadastrado", "vaccine_id": vaccine_id}), 201
 
 
@@ -1001,7 +1055,6 @@ def admin_create_vaccine():
 @login_required
 @require_permission("create_trip")
 def admin_create_batch():
-    """Cadastra um novo lote de produto."""
     body            = request.get_json(force=True)
     vaccine_id      = body.get("vaccine_id")
     batch_code      = body.get("batch_code", "").strip()
@@ -1014,6 +1067,16 @@ def admin_create_batch():
         quantity_units = int(quantity_units)
     except (ValueError, TypeError):
         return jsonify({"error": "Quantidade deve ser um número inteiro"}), 400
+
+    # Garante que a vacina pertence à empresa do usuário (exceto superadmin)
+    if not current_user.is_superadmin:
+        conn = db()
+        cur  = conn.cursor()
+        cur.execute("SELECT company_id FROM vaccines WHERE vaccine_id = %s", (vaccine_id,))
+        row = cur.fetchone()
+        cur.close(); conn.close()
+        if not row or row[0] != current_user.company_id:
+            return jsonify({"error": "Produto não pertence à sua empresa"}), 403
 
     conn = db()
     cur  = conn.cursor()
@@ -1032,8 +1095,118 @@ def admin_create_batch():
 
     audit("batch_created", target_table="vaccine_batch", target_id=batch_id,
           user_id=current_user.id, ip=request.remote_addr,
-          details={"vaccine_id": vaccine_id, "batch_code": batch_code, "quantity_units": quantity_units})
+          details={"vaccine_id": vaccine_id, "batch_code": batch_code})
     return jsonify({"message": "Lote cadastrado", "batch_id": batch_id}), 201
+
+
+# -------------------------------------------------------
+# Rotas Admin — Gestão de Empresas (superadmin only)
+# -------------------------------------------------------
+@app.route("/api/admin/companies", methods=["GET"])
+@login_required
+@require_permission("manage_companies")
+def admin_companies():
+    conn = db()
+    cur  = conn.cursor(dictionary=True)
+    cur.execute("SELECT company_id, name, cnpj, active, created_at FROM companies ORDER BY name")
+    data = cur.fetchall()
+    cur.close()
+    conn.close()
+    return jsonify(data)
+
+
+@app.route("/api/admin/companies", methods=["POST"])
+@login_required
+@require_permission("manage_companies")
+def admin_create_company():
+    body = request.get_json(force=True)
+    name = body.get("name", "").strip()
+    cnpj = body.get("cnpj", "").strip() or None
+
+    if not name:
+        return jsonify({"error": "Nome da empresa é obrigatório"}), 400
+
+    conn = db()
+    cur  = conn.cursor()
+    try:
+        cur.execute("INSERT INTO companies (name, cnpj) VALUES (%s, %s)", (name, cnpj))
+        conn.commit()
+        company_id = cur.lastrowid
+    except mysql.connector.IntegrityError:
+        cur.close(); conn.close()
+        return jsonify({"error": "CNPJ já cadastrado"}), 409
+    cur.close()
+    conn.close()
+
+    audit("company_created", target_table="companies", target_id=company_id,
+          user_id=current_user.id, ip=request.remote_addr, details={"name": name})
+    return jsonify({"message": "Empresa criada", "company_id": company_id}), 201
+
+
+# -------------------------------------------------------
+# Rotas Admin — Gestão de Usuários
+# -------------------------------------------------------
+@app.route("/api/admin/users", methods=["GET"])
+@login_required
+@require_permission("manage_users")
+def admin_users():
+    scope, params = company_where("u")
+    conn = db()
+    cur  = conn.cursor(dictionary=True)
+    cur.execute(f"""
+        SELECT u.user_id, u.name, u.email, u.role, u.created_at,
+               c.name AS company_name
+        FROM users u
+        LEFT JOIN companies c ON u.company_id = c.company_id
+        WHERE {scope}
+        ORDER BY u.role, u.name
+    """, params)
+    data = cur.fetchall()
+    cur.close()
+    conn.close()
+    return jsonify(data)
+
+
+@app.route("/api/admin/users", methods=["POST"])
+@login_required
+@require_permission("manage_users")
+def admin_create_user():
+    body       = request.get_json(force=True)
+    name       = body.get("name", "").strip()
+    email      = body.get("email", "").strip().lower()
+    password   = body.get("password", "").strip()
+    role       = body.get("role", "operator")
+    # superadmin pode escolher empresa; admin usa a própria
+    company_id = body.get("company_id") if current_user.is_superadmin else current_user.company_id
+
+    if not all([name, email, password]):
+        return jsonify({"error": "Nome, email e senha são obrigatórios"}), 400
+    if role not in ("admin", "operator"):
+        return jsonify({"error": "Role deve ser 'admin' ou 'operator'"}), 400
+    if not company_id:
+        return jsonify({"error": "Empresa é obrigatória"}), 400
+
+    pw_hash = bcrypt.hashpw(password.encode(), bcrypt.gensalt(rounds=12)).decode()
+
+    conn = db()
+    cur  = conn.cursor()
+    try:
+        cur.execute(
+            "INSERT INTO users (name, email, password_hash, role, company_id) VALUES (%s, %s, %s, %s, %s)",
+            (name, email, pw_hash, role, company_id)
+        )
+        conn.commit()
+        user_id = cur.lastrowid
+    except mysql.connector.IntegrityError:
+        cur.close(); conn.close()
+        return jsonify({"error": "Email já cadastrado"}), 409
+    cur.close()
+    conn.close()
+
+    audit("user_created", target_table="users", target_id=user_id,
+          user_id=current_user.id, ip=request.remote_addr,
+          details={"email": email, "role": role, "company_id": company_id})
+    return jsonify({"message": "Usuário criado", "user_id": user_id}), 201
 
 
 # -------------------------------------------------------

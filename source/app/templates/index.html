@@ -114,6 +114,7 @@ body {
   letter-spacing: .06em; padding: 1px 6px; border-radius: 4px;
   display: inline-block; margin-top: 1px;
 }
+.role-superadmin { background: rgba(255,180,0,.18); color: #f5a623; }
 .role-admin  { background: rgba(62,207,142,.15); color: var(--accent); }
 .role-operator { background: var(--surface3); color: var(--muted); }
 .btn-logout {
@@ -352,7 +353,7 @@ tr:hover td { background: var(--surface2); }
       <a class="nav-item active" onclick="showSection('dashboard')">
         <span class="nav-icon">⬡</span> Dashboard
       </a>
-      {% if user_role == 'admin' %}
+      {% if user_role in ('admin', 'superadmin') %}
       <a class="nav-item" onclick="showSection('admin')">
         <span class="nav-icon">⚙</span> Administração
         <span class="nav-badge" id="pendingBadge" style="display:none">0</span>
@@ -366,7 +367,7 @@ tr:hover td { background: var(--surface2); }
          onclick="if(!currentTripId){alert('Selecione uma viagem primeiro.');return false;}this.href='/trips/'+currentTripId+'/readings';">
         <span class="nav-icon">📋</span> Ver Registros
       </a>
-      {% if user_role == 'admin' %}
+      {% if user_role in ('admin', 'superadmin') %}
       <a class="nav-item" href="/api/audit" target="_blank">
         <span class="nav-icon">🔍</span> Audit Log
       </a>
@@ -379,9 +380,12 @@ tr:hover td { background: var(--surface2); }
       <div class="user-avatar">👤</div>
       <div>
         <div class="user-name">{{ user_name }}</div>
-        <span class="user-role {{ 'role-admin' if user_role == 'admin' else 'role-operator' }}">
+        <span class="user-role {% if user_role == 'superadmin' %}role-superadmin{% elif user_role == 'admin' %}role-admin{% else %}role-operator{% endif %}">
           {{ user_role }}
         </span>
+        {% if user_company and user_company != '—' %}
+        <div style="font-size:.7rem;color:var(--muted);margin-top:2px">{{ user_company }}</div>
+        {% endif %}
       </div>
     </div>
     <a href="/logout" class="btn-logout">↩ Sair</a>
@@ -457,7 +461,7 @@ tr:hover td { background: var(--surface2); }
     </div><!-- /sectionDashboard -->
 
     <!-- ── Admin Section ──────────────────────────────────── -->
-    {% if user_role == 'admin' %}
+    {% if user_role in ('admin', 'superadmin') %}
     <div id="sectionAdmin" style="display:none">
       <div class="admin-grid">
 
@@ -506,10 +510,10 @@ tr:hover td { background: var(--surface2); }
             <div class="table-wrap">
               <table id="vaccinesTable">
                 <thead>
-                  <tr><th>Nome</th><th>Fabricante</th><th>Faixa (°C)</th></tr>
+                  <tr><th>Nome</th><th>Fabricante</th><th>Faixa (°C)</th>{% if user_role == 'superadmin' %}<th>Empresa</th>{% endif %}</tr>
                 </thead>
                 <tbody id="vaccinesBody">
-                  <tr><td colspan="3" style="text-align:center;color:var(--muted);padding:20px">Carregando...</td></tr>
+                  <tr><td colspan="4" style="text-align:center;color:var(--muted);padding:20px">Carregando...</td></tr>
                 </tbody>
               </table>
             </div>
@@ -535,6 +539,48 @@ tr:hover td { background: var(--surface2); }
             </div>
           </div>
         </div>
+
+        <!-- Users -->
+        <div class="panel">
+          <div class="panel-header">
+            <h3>Usuários</h3>
+            <button class="btn btn-primary btn-sm" onclick="showNewUserModal()">+ Novo Usuário</button>
+          </div>
+          <div class="panel-body" style="padding:0">
+            <div class="table-wrap">
+              <table id="usersTable">
+                <thead>
+                  <tr><th>Nome</th><th>Email</th><th>Role</th>{% if user_role == 'superadmin' %}<th>Empresa</th>{% endif %}</tr>
+                </thead>
+                <tbody id="usersBody">
+                  <tr><td colspan="4" style="text-align:center;color:var(--muted);padding:20px">Carregando...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Companies (superadmin only) -->
+        {% if user_role == 'superadmin' %}
+        <div class="panel">
+          <div class="panel-header">
+            <h3>Empresas</h3>
+            <button class="btn btn-primary btn-sm" onclick="showNewCompanyModal()">+ Nova Empresa</button>
+          </div>
+          <div class="panel-body" style="padding:0">
+            <div class="table-wrap">
+              <table id="companiesTable">
+                <thead>
+                  <tr><th>Nome</th><th>CNPJ</th><th>Status</th></tr>
+                </thead>
+                <tbody id="companiesBody">
+                  <tr><td colspan="3" style="text-align:center;color:var(--muted);padding:20px">Carregando...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        {% endif %}
 
       </div>
     </div>
@@ -593,6 +639,12 @@ tr:hover td { background: var(--surface2); }
   <div class="modal">
     <h3>Novo Produto</h3>
     <p class="modal-sub">Cadastre um produto farmacêutico com sua faixa de temperatura segura.</p>
+    {% if user_role == 'superadmin' %}
+    <div class="form-field">
+      <label>Empresa *</label>
+      <select id="newVaccineCompany"></select>
+    </div>
+    {% endif %}
     <div class="form-field">
       <label>Nome do produto *</label>
       <input type="text" id="newVaccineName" placeholder="Ex: Spikevax">
@@ -617,6 +669,65 @@ tr:hover td { background: var(--surface2); }
     </div>
   </div>
 </div>
+
+<!-- New User Modal -->
+<div class="modal-overlay" id="modalNewUser">
+  <div class="modal">
+    <h3>Novo Usuário</h3>
+    <p class="modal-sub">Crie um operador ou admin{% if user_role == 'superadmin' %} em qualquer empresa{% else %} da sua empresa{% endif %}.</p>
+    {% if user_role == 'superadmin' %}
+    <div class="form-field">
+      <label>Empresa *</label>
+      <select id="newUserCompany"></select>
+    </div>
+    {% endif %}
+    <div class="form-field">
+      <label>Nome *</label>
+      <input type="text" id="newUserName" placeholder="Ex: Ana Costa">
+    </div>
+    <div class="form-field">
+      <label>Email *</label>
+      <input type="email" id="newUserEmail" placeholder="Ex: ana@empresa.com">
+    </div>
+    <div class="form-field">
+      <label>Senha *</label>
+      <input type="password" id="newUserPassword" placeholder="Mínimo 6 caracteres">
+    </div>
+    <div class="form-field">
+      <label>Role *</label>
+      <select id="newUserRole">
+        <option value="operator">Operador</option>
+        <option value="admin">Admin</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modalNewUser')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmNewUser()">Criar Usuário</button>
+    </div>
+  </div>
+</div>
+
+<!-- New Company Modal (superadmin only) -->
+{% if user_role == 'superadmin' %}
+<div class="modal-overlay" id="modalNewCompany">
+  <div class="modal">
+    <h3>Nova Empresa</h3>
+    <p class="modal-sub">Cadastre uma nova empresa no sistema.</p>
+    <div class="form-field">
+      <label>Nome da empresa *</label>
+      <input type="text" id="newCompanyName" placeholder="Ex: BioFrio Distribuidora">
+    </div>
+    <div class="form-field">
+      <label>CNPJ</label>
+      <input type="text" id="newCompanyCnpj" placeholder="Ex: 12.345.678/0001-99">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modalNewCompany')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmNewCompany()">Criar Empresa</button>
+    </div>
+  </div>
+</div>
+{% endif %}
 
 <!-- New Batch Modal -->
 <div class="modal-overlay" id="modalNewBatch">
@@ -656,11 +767,20 @@ let pendingDeviceSerial = null;
 let activeTripId = {{ active_trip_id or 'null' }};
 
 // ── Section toggle ────────────────────────────────────────────
+const IS_SUPERADMIN = {{ 'true' if user_role == 'superadmin' else 'false' }};
+
 function showSection(name) {
   document.getElementById('sectionDashboard').style.display = name === 'dashboard' ? '' : 'none';
-  {% if user_role == 'admin' %}
+  {% if user_role in ('admin', 'superadmin') %}
   document.getElementById('sectionAdmin').style.display = name === 'admin' ? '' : 'none';
-  if (name === 'admin') { refreshAdminPending(); refreshAdminTrips(); refreshAdminVaccines(); refreshAdminBatches(); }
+  if (name === 'admin') {
+    refreshAdminPending();
+    refreshAdminTrips();
+    refreshAdminVaccines();
+    refreshAdminBatches();
+    refreshAdminUsers();
+    if (IS_SUPERADMIN) refreshAdminCompanies();
+  }
   {% endif %}
   document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
   event.currentTarget.classList.add('active');
@@ -1000,6 +1120,80 @@ function closeTrip(tripId) {
     .then(() => { refreshAdminTrips(); refreshTrips(); });
 }
 
+function refreshAdminUsers() {
+  fetch('/api/admin/users').then(r => r.json()).then(data => {
+    const body = document.getElementById('usersBody');
+    if (!data.length) { body.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:20px">Nenhum usuário</td></tr>'; return; }
+    body.innerHTML = data.map(u => `
+      <tr>
+        <td>${u.name}</td>
+        <td style="font-size:.78rem">${u.email}</td>
+        <td><span style="font-size:.72rem;padding:2px 6px;border-radius:4px;background:rgba(255,255,255,.07)">${u.role}</span></td>
+        ${IS_SUPERADMIN ? `<td style="font-size:.78rem">${u.company_name || '—'}</td>` : ''}
+      </tr>`).join('');
+  });
+}
+
+function refreshAdminCompanies() {
+  fetch('/api/admin/companies').then(r => r.json()).then(data => {
+    const body = document.getElementById('companiesBody');
+    if (!data.length) { body.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:20px">Nenhuma empresa</td></tr>'; return; }
+    body.innerHTML = data.map(c => `
+      <tr>
+        <td>${c.name}</td>
+        <td style="font-family:monospace;font-size:.78rem">${c.cnpj || '—'}</td>
+        <td>${c.active ? '✓ Ativa' : '✗ Inativa'}</td>
+      </tr>`).join('');
+  });
+}
+
+function showNewUserModal() {
+  if (IS_SUPERADMIN) {
+    fetch('/api/admin/companies').then(r => r.json()).then(companies => {
+      document.getElementById('newUserCompany').innerHTML = companies.map(c =>
+        `<option value="${c.company_id}">${c.name}</option>`).join('');
+      document.getElementById('modalNewUser').classList.add('open');
+    });
+  } else {
+    document.getElementById('modalNewUser').classList.add('open');
+  }
+}
+
+function confirmNewUser() {
+  const name     = document.getElementById('newUserName').value.trim();
+  const email    = document.getElementById('newUserEmail').value.trim();
+  const password = document.getElementById('newUserPassword').value;
+  const role     = document.getElementById('newUserRole').value;
+  const body     = { name, email, password, role };
+  if (IS_SUPERADMIN) body.company_id = parseInt(document.getElementById('newUserCompany').value);
+  if (!name || !email || !password) return alert('Preencha todos os campos obrigatórios.');
+  fetch('/api/admin/users', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) })
+    .then(r => r.json()).then(d => {
+      if (d.error) return alert('Erro: ' + d.error);
+      closeModal('modalNewUser');
+      ['newUserName','newUserEmail','newUserPassword'].forEach(id => document.getElementById(id).value = '');
+      refreshAdminUsers();
+    });
+}
+
+function showNewCompanyModal() {
+  document.getElementById('modalNewCompany').classList.add('open');
+}
+
+function confirmNewCompany() {
+  const name = document.getElementById('newCompanyName').value.trim();
+  const cnpj = document.getElementById('newCompanyCnpj').value.trim();
+  if (!name) return alert('Nome da empresa é obrigatório.');
+  fetch('/api/admin/companies', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ name, cnpj }) })
+    .then(r => r.json()).then(d => {
+      if (d.error) return alert('Erro: ' + d.error);
+      closeModal('modalNewCompany');
+      document.getElementById('newCompanyName').value = '';
+      document.getElementById('newCompanyCnpj').value = '';
+      refreshAdminCompanies();
+    });
+}
+
 function refreshAdminVaccines() {
   fetch('/api/admin/vaccines').then(r => r.json()).then(data => {
     const body = document.getElementById('vaccinesBody');
@@ -1012,6 +1206,7 @@ function refreshAdminVaccines() {
       <td>${v.name}</td>
       <td>${v.manufacturer || '<span style="color:var(--muted)">—</span>'}</td>
       <td>${v.min_temp}°C → ${v.max_temp}°C</td>
+      ${IS_SUPERADMIN ? `<td style="font-size:.78rem">${v.company_name || '—'}</td>` : ''}
     </tr>`).join('');
   }).catch(() => {});
 }
@@ -1034,11 +1229,18 @@ function refreshAdminBatches() {
 }
 
 function showNewVaccineModal() {
-  document.getElementById('newVaccineName').value = '';
-  document.getElementById('newVaccineMfr').value = '';
-  document.getElementById('newVaccineMin').value = '';
-  document.getElementById('newVaccineMax').value = '';
-  document.getElementById('modalNewVaccine').classList.add('open');
+  ['newVaccineName','newVaccineMfr','newVaccineMin','newVaccineMax'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  if (IS_SUPERADMIN) {
+    fetch('/api/admin/companies').then(r => r.json()).then(companies => {
+      document.getElementById('newVaccineCompany').innerHTML = companies.map(c =>
+        `<option value="${c.company_id}">${c.name}</option>`).join('');
+      document.getElementById('modalNewVaccine').classList.add('open');
+    });
+  } else {
+    document.getElementById('modalNewVaccine').classList.add('open');
+  }
 }
 
 function confirmNewVaccine() {
@@ -1047,10 +1249,12 @@ function confirmNewVaccine() {
   const min  = document.getElementById('newVaccineMin').value;
   const max  = document.getElementById('newVaccineMax').value;
   if (!name || min === '' || max === '') return alert('Preencha nome e temperaturas.');
+  const body = { name, manufacturer: mfr, min_temp: parseFloat(min), max_temp: parseFloat(max) };
+  if (IS_SUPERADMIN) body.company_id = parseInt(document.getElementById('newVaccineCompany').value);
   fetch('/api/admin/vaccines', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, manufacturer: mfr, min_temp: parseFloat(min), max_temp: parseFloat(max) })
+    body: JSON.stringify(body)
   }).then(r => r.json()).then(res => {
     if (res.error) return alert(res.error);
     closeModal('modalNewVaccine');

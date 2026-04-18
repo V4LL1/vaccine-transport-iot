@@ -1,10 +1,22 @@
 -- ===========================================
 -- DATABASE FOR SECURE IoT VACCINE TRANSPORT
+-- RBAC Multi-Empresa: superadmin / admin / operator
 -- ===========================================
 
 DROP DATABASE IF EXISTS vaccine_transport;
 CREATE DATABASE vaccine_transport;
 USE vaccine_transport;
+
+-- ============================
+-- COMPANIES TABLE
+-- ============================
+CREATE TABLE companies (
+    company_id  INT AUTO_INCREMENT PRIMARY KEY,
+    name        VARCHAR(150) NOT NULL,
+    cnpj        VARCHAR(18)  NULL UNIQUE,
+    active      BOOLEAN DEFAULT TRUE,
+    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
 -- ============================
 -- USERS TABLE
@@ -14,9 +26,11 @@ CREATE TABLE users (
     name          VARCHAR(100) NOT NULL,
     email         VARCHAR(150) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
-    role          ENUM('admin','operator') DEFAULT 'operator',
-    totp_secret   VARCHAR(32) NULL,          -- Chave TOTP (M2 — MFA)
-    created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    role          ENUM('superadmin','admin','operator') NOT NULL DEFAULT 'operator',
+    company_id    INT NULL,                -- NULL apenas para superadmin
+    totp_secret   VARCHAR(32) NULL,
+    created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (company_id) REFERENCES companies(company_id) ON DELETE SET NULL
 );
 
 -- ============================
@@ -24,36 +38,40 @@ CREATE TABLE users (
 -- ============================
 CREATE TABLE devices (
     device_id           INT AUTO_INCREMENT PRIMARY KEY,
+    company_id          INT NULL,
     serial_number       VARCHAR(100) UNIQUE NOT NULL,
-    name                VARCHAR(100) NULL,              -- Nome amigável (definido pelo admin no registro)
+    name                VARCHAR(100) NULL,
     status              ENUM('active','inactive') DEFAULT 'active',
     registration_status ENUM('pending','active','inactive') NOT NULL DEFAULT 'pending',
-    registered_by       INT NULL,                       -- FK para users (quem registrou)
+    registered_by       INT NULL,
     registered_at       DATETIME NULL,
     last_seen           DATETIME NULL,
-    FOREIGN KEY (registered_by) REFERENCES users(user_id) ON DELETE SET NULL
+    FOREIGN KEY (company_id)    REFERENCES companies(company_id) ON DELETE SET NULL,
+    FOREIGN KEY (registered_by) REFERENCES users(user_id)     ON DELETE SET NULL
 );
 
 -- ============================
 -- VACCINES TABLE
 -- ============================
 CREATE TABLE vaccines (
-    vaccine_id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(150) NOT NULL,
+    vaccine_id  INT AUTO_INCREMENT PRIMARY KEY,
+    company_id  INT NOT NULL,
+    name        VARCHAR(150) NOT NULL,
     manufacturer VARCHAR(150),
-    min_temp DECIMAL(5,2) NOT NULL,
-    max_temp DECIMAL(5,2) NOT NULL
+    min_temp    DECIMAL(5,2) NOT NULL,
+    max_temp    DECIMAL(5,2) NOT NULL,
+    FOREIGN KEY (company_id) REFERENCES companies(company_id)
 );
 
 -- ============================
 -- VACCINE BATCH TABLE
 -- ============================
 CREATE TABLE vaccine_batch (
-    batch_id INT AUTO_INCREMENT PRIMARY KEY,
-    vaccine_id INT NOT NULL,
-    batch_code VARCHAR(150) UNIQUE NOT NULL,
+    batch_id        INT AUTO_INCREMENT PRIMARY KEY,
+    vaccine_id      INT NOT NULL,
+    batch_code      VARCHAR(150) UNIQUE NOT NULL,
     expiration_date DATE NOT NULL,
-    quantity_units INT NOT NULL,
+    quantity_units  INT NOT NULL,
     FOREIGN KEY (vaccine_id) REFERENCES vaccines(vaccine_id)
 );
 
@@ -61,15 +79,15 @@ CREATE TABLE vaccine_batch (
 -- TRIPS TABLE
 -- ============================
 CREATE TABLE trips (
-    trip_id INT AUTO_INCREMENT PRIMARY KEY,
-    batch_id INT NOT NULL,
-    device_id INT NULL,   -- NULL até admin registrar o ESP32 na viagem
-    start_time DATETIME NOT NULL,
-    end_time DATETIME NULL,
-    origin VARCHAR(200) NOT NULL,
-    destination VARCHAR(200) NOT NULL,
+    trip_id               INT AUTO_INCREMENT PRIMARY KEY,
+    batch_id              INT NOT NULL,
+    device_id             INT NULL,
+    start_time            DATETIME NOT NULL,
+    end_time              DATETIME NULL,
+    origin                VARCHAR(200) NOT NULL,
+    destination           VARCHAR(200) NOT NULL,
     received_confirmation BOOLEAN DEFAULT FALSE,
-    FOREIGN KEY (batch_id) REFERENCES vaccine_batch(batch_id),
+    FOREIGN KEY (batch_id)  REFERENCES vaccine_batch(batch_id),
     FOREIGN KEY (device_id) REFERENCES devices(device_id)
 );
 
@@ -77,125 +95,138 @@ CREATE TABLE trips (
 -- READINGS TABLE
 -- ============================
 CREATE TABLE readings (
-    reading_id INT AUTO_INCREMENT PRIMARY KEY,
-    trip_id INT NOT NULL,
-    batch_id INT NOT NULL,
-    timestamp DATETIME NOT NULL,
+    reading_id  INT AUTO_INCREMENT PRIMARY KEY,
+    trip_id     INT NOT NULL,
+    batch_id    INT NOT NULL,
+    timestamp   DATETIME NOT NULL,
     temperature DECIMAL(5,2) NOT NULL,
-    humidity DECIMAL(5,2) NOT NULL,
-    latitude DECIMAL(10,7) NULL,
-    longitude DECIMAL(10,7) NULL,
-    FOREIGN KEY (trip_id) REFERENCES trips(trip_id),
+    humidity    DECIMAL(5,2) NOT NULL,
+    latitude    DECIMAL(10,7) NULL,
+    longitude   DECIMAL(10,7) NULL,
+    FOREIGN KEY (trip_id)  REFERENCES trips(trip_id),
     FOREIGN KEY (batch_id) REFERENCES vaccine_batch(batch_id)
 );
 
 -- ============================
--- AUDIT LOG TABLE (M1+)
--- Registra ações relevantes do sistema para rastreabilidade
+-- AUDIT LOG TABLE
 -- ============================
 CREATE TABLE audit_log (
     log_id       INT AUTO_INCREMENT PRIMARY KEY,
-    user_id      INT NULL,                        -- NULL = ação do sistema/IoT
-    action       VARCHAR(100) NOT NULL,           -- Ex: 'login', 'trip_start', 'alarm_ack'
-    target_table VARCHAR(50)  NULL,               -- Tabela afetada
-    target_id    INT          NULL,               -- ID do registro afetado
+    user_id      INT NULL,
+    action       VARCHAR(100) NOT NULL,
+    target_table VARCHAR(50)  NULL,
+    target_id    INT          NULL,
     ip_address   VARCHAR(45)  NULL,
-    details      TEXT         NULL,               -- JSON com detalhes adicionais
+    details      TEXT         NULL,
     created_at   DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE SET NULL
 );
 
 -- ============================
--- SEEN NONCES TABLE (M2)
--- Usada para mitigação de replay attacks
--- Populada no Milestone 2 com validação HMAC
+-- SEEN NONCES TABLE
 -- ============================
 CREATE TABLE seen_nonces (
     nonce       VARCHAR(64) NOT NULL PRIMARY KEY,
     device_id   VARCHAR(100) NOT NULL,
     received_at DATETIME NOT NULL,
-    INDEX idx_received_at (received_at)   -- Para limpeza periódica eficiente
+    INDEX idx_received_at (received_at)
 );
 
 
-
-
-
-
-
-USE vaccine_transport;
-
 -- ==========================================================
--- 0. LIMPEZA (Opcional: remove dados antigos se existirem)
+-- SEED DATA
 -- ==========================================================
-SET FOREIGN_KEY_CHECKS = 0;
-TRUNCATE TABLE seen_nonces;
-TRUNCATE TABLE audit_log;
-TRUNCATE TABLE readings;
-TRUNCATE TABLE trips;
-TRUNCATE TABLE vaccine_batch;
-TRUNCATE TABLE vaccines;
-TRUNCATE TABLE devices;
-TRUNCATE TABLE users;
-SET FOREIGN_KEY_CHECKS = 1;
 
 -- ============================
--- 1. POPULAR USUÁRIOS
+-- 1. EMPRESAS
 -- ============================
--- Senhas bcrypt geradas com: python -c "import bcrypt; print(bcrypt.hashpw(b'senha', bcrypt.gensalt()).decode())"
--- admin123  → hash abaixo
--- op123     → hash abaixo
-INSERT INTO users (name, email, password_hash, role) VALUES
-('Carlos Silva',  'admin@logistica.com',    '$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36DQBuMpV9h.L7MfxlJiUAy', 'admin'),
-('Maria Oliveira','maria@transporte.com',   '$2b$12$I5vqwLXClQELkxIGGEQUOuqUMt4TKdR9W.8jGaqyK9TKNiJHPWIJa', 'operator'),
-('João Santos',   'joao@transporte.com',    '$2b$12$I5vqwLXClQELkxIGGEQUOuqUMt4TKdR9W.8jGaqyK9TKNiJHPWIJa', 'operator'),
-('Ana Costa',     'ana@monitoramento.com',  '$2b$12$I5vqwLXClQELkxIGGEQUOuqUMt4TKdR9W.8jGaqyK9TKNiJHPWIJa', 'operator');
+INSERT INTO companies (company_id, name, cnpj) VALUES
+(1, 'PharmaTransport Logística', '12.345.678/0001-99'),
+(2, 'BioFrio Distribuidora',     '98.765.432/0001-11');
 
 -- ============================
--- 2. POPULAR DISPOSITIVOS (seed — pré-registrados)
--- Dispositivos reais são descobertos automaticamente via MQTT
--- e registrados pelo admin pelo dashboard
+-- 2. USUÁRIOS
+-- Senhas:
+--   admin123 → $2b$12$DYkfTREXJTBJHd3g57UG4OcKnsYehLUT7vVY60Wh4UeGNYJ5yJTpC
+--   op123    → $2b$12$MpGgyanpzh8ltYYJncGR2OlHgcznn62D7mVcY08uV4auSXNVb2BZu
 -- ============================
-INSERT INTO devices (serial_number, name, status, registration_status) VALUES
-('IOT-GPS-001',  'Caminhão Refrigerado #1', 'active',   'active'),
-('IOT-GPS-002',  'Caminhão Refrigerado #2', 'active',   'active'),
-('IOT-GPS-003',  'Sensor Ultracongelado',   'inactive', 'inactive'),
-('IOT-GPS-004',  'Carga Moderna SP',        'active',   'active'),
-('IOT-TEMP-X99', 'Sensor Externo Teste',    'active',   'active');
+
+-- Superadmin — sem empresa (acesso global)
+INSERT INTO users (name, email, password_hash, role, company_id) VALUES
+('Guilherme (Dev)', 'guilherme.palmanhani@gmail.com',
+ '$2b$12$DYkfTREXJTBJHd3g57UG4OcKnsYehLUT7vVY60Wh4UeGNYJ5yJTpC',
+ 'superadmin', NULL);
+
+-- Admin da PharmaTransport
+INSERT INTO users (name, email, password_hash, role, company_id) VALUES
+('Carlos Silva', 'admin@pharmatransport.com',
+ '$2b$12$DYkfTREXJTBJHd3g57UG4OcKnsYehLUT7vVY60Wh4UeGNYJ5yJTpC',
+ 'admin', 1);
+
+-- Operadores da PharmaTransport
+INSERT INTO users (name, email, password_hash, role, company_id) VALUES
+('Maria Oliveira', 'op1@pharmatransport.com',
+ '$2b$12$MpGgyanpzh8ltYYJncGR2OlHgcznn62D7mVcY08uV4auSXNVb2BZu',
+ 'operator', 1),
+('João Santos', 'op2@pharmatransport.com',
+ '$2b$12$MpGgyanpzh8ltYYJncGR2OlHgcznn62D7mVcY08uV4auSXNVb2BZu',
+ 'operator', 1);
+
+-- Admin da BioFrio
+INSERT INTO users (name, email, password_hash, role, company_id) VALUES
+('Ana Costa', 'admin@biofrio.com',
+ '$2b$12$DYkfTREXJTBJHd3g57UG4OcKnsYehLUT7vVY60Wh4UeGNYJ5yJTpC',
+ 'admin', 2);
+
+-- Operador da BioFrio
+INSERT INTO users (name, email, password_hash, role, company_id) VALUES
+('Pedro Lima', 'op1@biofrio.com',
+ '$2b$12$MpGgyanpzh8ltYYJncGR2OlHgcznn62D7mVcY08uV4auSXNVb2BZu',
+ 'operator', 2);
 
 -- ============================
--- 3. POPULAR VACINAS (Tipos Reais)
+-- 3. DISPOSITIVOS
 -- ============================
-INSERT INTO vaccines (name, manufacturer, min_temp, max_temp) VALUES
-('Comirnaty (COVID-19)', 'Pfizer/BioNTech', -80.00, -60.00), -- Ultra-frio
-('Vaxzevria', 'AstraZeneca', 2.00, 8.00),                 -- Geladeira comum
-('CoronaVac', 'Sinovac', 2.00, 8.00),                     -- Geladeira comum
-('Janssen', 'Johnson & Johnson', 2.00, 8.00),
-('Spikevax', 'Moderna', -25.00, -15.00);                  -- Congelado
+INSERT INTO devices (company_id, serial_number, name, status, registration_status) VALUES
+(1, 'IOT-GPS-001', 'Caminhão Refrigerado #1', 'active',   'active'),
+(1, 'IOT-GPS-004', 'Carga Moderna SP',        'active',   'active'),
+(2, 'IOT-GPS-002', 'Sensor BioFrio #1',       'active',   'active');
 
 -- ============================
--- 4. POPULAR LOTES
+-- 4. VACINAS (por empresa)
+-- ============================
+-- PharmaTransport (company_id=1)
+INSERT INTO vaccines (company_id, name, manufacturer, min_temp, max_temp) VALUES
+(1, 'Spikevax',           'Moderna',          -25.00, -15.00),
+(1, 'Comirnaty (COVID-19)','Pfizer/BioNTech', -80.00, -60.00),
+(1, 'Vaxzevria',          'AstraZeneca',        2.00,   8.00);
+
+-- BioFrio (company_id=2)
+INSERT INTO vaccines (company_id, name, manufacturer, min_temp, max_temp) VALUES
+(2, 'CoronaVac', 'Sinovac',              2.00, 8.00),
+(2, 'Janssen',   'Johnson & Johnson',    2.00, 8.00);
+
+-- ============================
+-- 5. LOTES
 -- ============================
 INSERT INTO vaccine_batch (vaccine_id, batch_code, expiration_date, quantity_units) VALUES
-(1, 'PFZ-2025-A01', '2025-12-31', 5000), -- Pfizer
-(2, 'AZ-2024-B99', '2024-10-20', 10000), -- AstraZeneca
-(1, 'PFZ-2025-C03', '2025-11-15', 3000), -- Pfizer
-(5, 'MOD-2025-X12', '2025-06-30', 4500); -- Moderna
+(1, 'MOD-2026-X01', '2026-12-31', 4500),  -- Spikevax
+(2, 'PFZ-2026-A01', '2026-10-15', 5000),  -- Comirnaty
+(3, 'AZ-2026-B01',  '2026-08-20', 3000),  -- Vaxzevria
+(4, 'SIN-2026-C01', '2026-07-30', 8000),  -- CoronaVac
+(5, 'JNJ-2026-D01', '2026-09-10', 6000);  -- Janssen
 
 -- ============================
--- 5. POPULAR VIAGENS (TRIPS)
+-- 6. VIAGENS
 -- ============================
--- Viagem 1: Pfizer (Ultra-frio) - Concluída
+-- Viagem PharmaTransport — Spikevax em andamento (device IOT-GPS-004)
 INSERT INTO trips (batch_id, device_id, start_time, end_time, origin, destination, received_confirmation) VALUES
-(1, 1, '2023-10-01 08:00:00', '2023-10-01 14:00:00', 'CD São Paulo', 'Hospital das Clínicas', TRUE);
+(1, 2, NOW() - INTERVAL 4 HOUR, NULL, 'Aeroporto Guarulhos', 'Interior SP - Campinas', FALSE);
 
--- Viagem 2: AstraZeneca (Refrigerado) - Concluída
+-- Viagem PharmaTransport — Comirnaty encerrada
 INSERT INTO trips (batch_id, device_id, start_time, end_time, origin, destination, received_confirmation) VALUES
-(2, 2, '2023-10-02 06:00:00', '2023-10-02 18:00:00', 'Fabrica Fiocruz', 'CD Rio de Janeiro', TRUE);
+(2, 1, '2026-04-10 08:00:00', '2026-04-10 14:00:00', 'CD São Paulo', 'Hospital das Clínicas', TRUE);
 
--- Viagem 3: Moderna (Congelado) - EM ANDAMENTO (end_time NULL)
+-- Viagem BioFrio — CoronaVac em andamento (device IOT-GPS-002)
 INSERT INTO trips (batch_id, device_id, start_time, end_time, origin, destination, received_confirmation) VALUES
-(4, 4, NOW() - INTERVAL 4 HOUR, NULL, 'Aeroporto Guarulhos', 'Interior SP - Campinas', FALSE);
-
-
-
+(4, 3, NOW() - INTERVAL 2 HOUR, NULL, 'Rio de Janeiro', 'Niterói', FALSE);
