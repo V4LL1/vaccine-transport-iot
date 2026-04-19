@@ -1059,7 +1059,7 @@ function loadTripData(tripId, trips) {
 function clearViz() {
   document.getElementById('chartSub').textContent = 'Selecione um lote';
   document.getElementById('mapSub').textContent = '—';
-  if (tempChart) { tempChart.data.labels = []; tempChart.data.datasets[0].data = []; tempChart.update(); }
+  if (tempChart) { tempChart.data.labels = []; tempChart.data.datasets.forEach(ds => ds.data = []); tempChart.update(); }
   if (routeLayer) routeLayer.clearLayers();
   if (markersLayer) markersLayer.clearLayers();
 }
@@ -1073,9 +1073,17 @@ function refreshChartAndMap(tripId) {
     // ── Chart ──
     const labels = data.map(r => {
       const d = new Date(r.timestamp);
-      return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     });
-    const temps = data.map(r => r.temperature);
+    const temps = data.map(r => Number(r.temperature));
+    const minT  = data.length && data[0].min_temp != null ? Number(data[0].min_temp) : null;
+    const maxT  = data.length && data[0].max_temp != null ? Number(data[0].max_temp) : null;
+    const ptR   = data.length > 80 ? 0 : 4;
+
+    // Verde para leituras OK, vermelho para violações
+    const ptColors = data.map(r =>
+      (r.temperature < r.min_temp || r.temperature > r.max_temp) ? '#f66060' : '#3ECF8E'
+    );
 
     if (!tempChart) {
       const ctx = document.getElementById('tempChart').getContext('2d');
@@ -1083,50 +1091,93 @@ function refreshChartAndMap(tripId) {
         type: 'line',
         data: {
           labels,
-          datasets: [{
-            label: 'Temperatura (°C)',
-            data: temps,
-            borderColor: '#3ECF8E',
-            backgroundColor: 'rgba(62,207,142,0.08)',
-            borderWidth: 2,
-            pointRadius: data.length > 100 ? 0 : 3,
-            pointBackgroundColor: '#3ECF8E',
-            tension: 0.3,
-            fill: true,
-          }]
+          datasets: [
+            {
+              label: 'Temperatura (°C)',
+              data: temps,
+              borderColor: '#3ECF8E',
+              backgroundColor: 'rgba(62,207,142,0.10)',
+              borderWidth: 2,
+              pointRadius: ptR,
+              pointHoverRadius: 5,
+              pointBackgroundColor: ptColors,
+              pointBorderColor: ptColors,
+              tension: 0.35,
+              fill: true,
+            },
+            {
+              label: `Mín (${minT}°C)`,
+              data: minT !== null ? Array(temps.length).fill(minT) : [],
+              borderColor: 'rgba(240,165,0,0.55)',
+              borderWidth: 1.5,
+              borderDash: [5, 4],
+              pointRadius: 0,
+              fill: false,
+              tension: 0,
+            },
+            {
+              label: `Máx (${maxT}°C)`,
+              data: maxT !== null ? Array(temps.length).fill(maxT) : [],
+              borderColor: 'rgba(240,165,0,0.55)',
+              borderWidth: 1.5,
+              borderDash: [5, 4],
+              pointRadius: 0,
+              fill: false,
+              tension: 0,
+            },
+          ]
         },
         options: {
           responsive: true, maintainAspectRatio: false,
           animation: { duration: 300 },
+          interaction: { mode: 'index', intersect: false },
           plugins: {
-            legend: { display: false },
+            legend: {
+              display: true,
+              labels: {
+                color: '#666', font: { size: 10 },
+                boxWidth: 14, padding: 14,
+              }
+            },
             tooltip: {
               backgroundColor: '#1c1c1c',
-              borderColor: 'rgba(255,255,255,0.1)',
+              borderColor: 'rgba(255,255,255,0.12)',
               borderWidth: 1,
-              titleColor: '#ededed',
-              bodyColor: '#888',
+              titleColor: '#999',
+              bodyColor: '#ededed',
+              padding: 10,
               callbacks: {
-                label: ctx => `${ctx.parsed.y.toFixed(1)} °C`
+                label: item => {
+                  if (item.datasetIndex !== 0) return `  ${item.dataset.label}`;
+                  const t = item.parsed.y;
+                  const ok = (minT === null || t >= minT) && (maxT === null || t <= maxT);
+                  return `  ${t.toFixed(1)}°C — ${ok ? '✓ OK' : '✗ Violação'}`;
+                }
               }
             }
           },
           scales: {
             x: {
-              ticks: { color: '#555', maxTicksLimit: 8, font: { size: 10 } },
+              ticks: { color: '#555', maxTicksLimit: 8, maxRotation: 0, font: { size: 10 } },
               grid: { color: 'rgba(255,255,255,0.04)' }
             },
             y: {
-              ticks: { color: '#555', font: { size: 10 }, callback: v => v + '°C' },
-              grid: { color: 'rgba(255,255,255,0.04)' }
+              ticks: { color: '#555', font: { size: 10 }, callback: v => v.toFixed(1) + '°C', maxTicksLimit: 7 },
+              grid: { color: 'rgba(255,255,255,0.05)' }
             }
           }
         }
       });
     } else {
-      tempChart.data.labels = labels;
-      tempChart.data.datasets[0].data = temps;
-      tempChart.data.datasets[0].pointRadius = data.length > 100 ? 0 : 3;
+      tempChart.data.labels                          = labels;
+      tempChart.data.datasets[0].data               = temps;
+      tempChart.data.datasets[0].pointRadius        = ptR;
+      tempChart.data.datasets[0].pointBackgroundColor = ptColors;
+      tempChart.data.datasets[0].pointBorderColor   = ptColors;
+      tempChart.data.datasets[1].data               = minT !== null ? Array(temps.length).fill(minT) : [];
+      tempChart.data.datasets[1].label              = `Mín (${minT}°C)`;
+      tempChart.data.datasets[2].data               = maxT !== null ? Array(temps.length).fill(maxT) : [];
+      tempChart.data.datasets[2].label              = `Máx (${maxT}°C)`;
       tempChart.update();
     }
 
