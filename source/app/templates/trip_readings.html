@@ -166,7 +166,7 @@ tbody tr.row-viol:hover td { background: rgba(246,96,96,.08); }
     <div class="logo-mark">💊</div>
     <div>
       <div class="header-title">{{ trip.batch_code }} — {{ trip.vaccine_name }}</div>
-      <div class="header-sub">Viagem #{{ trip.trip_id }} &nbsp;·&nbsp; {{ trip.origin }} → {{ trip.destination }}</div>
+      <div class="header-sub">Rastreamento #{{ trip.trip_id }} &nbsp;·&nbsp; {{ trip.origin }} → {{ trip.destination }}</div>
     </div>
   </div>
   <a href="/" class="btn-back">← Dashboard</a>
@@ -300,7 +300,7 @@ tbody tr.row-viol:hover td { background: rgba(246,96,96,.08); }
     {% else %}
       <div class="empty">
         <span class="empty-icon">📋</span>
-        Nenhum registro encontrado para esta viagem.
+        Nenhum registro encontrado para este rastreamento.
       </div>
     {% endif %}
   </div>
