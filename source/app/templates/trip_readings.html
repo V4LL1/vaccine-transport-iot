@@ -129,6 +129,34 @@ tbody tr.row-viol:hover td { background: rgba(246,96,96,.08); }
 
 .empty { padding: 52px; text-align: center; color: var(--muted); font-size: .85rem; }
 .empty-icon { font-size: 2rem; opacity: .3; display: block; margin-bottom: 8px; }
+
+/* ── Date filter bar ─────────────────────────────────────────── */
+.filter-bar {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 14px 20px; margin-bottom: 16px;
+  display: flex; align-items: center; flex-wrap: wrap; gap: 12px;
+}
+.filter-bar label { font-size: .72rem; font-weight: 600; color: var(--muted);
+                    text-transform: uppercase; letter-spacing: .06em; white-space: nowrap; }
+.filter-bar input[type="date"] {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 7px; padding: 6px 10px; color: var(--text);
+  font-family: inherit; font-size: .82rem; outline: none;
+  transition: border-color .15s; color-scheme: dark;
+}
+.filter-bar input[type="date"]:focus { border-color: #3ECF8E; }
+.filter-sep { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; flex: 1; }
+.filter-actions { display: flex; align-items: center; gap: 8px; }
+.btn-filter {
+  padding: 6px 14px; border-radius: 7px; font-family: inherit;
+  font-size: .8rem; font-weight: 600; cursor: pointer; border: none; transition: all .15s;
+}
+.btn-filter-apply { background: #3ECF8E; color: #0f0f0f; }
+.btn-filter-apply:hover { background: #2db67d; }
+.btn-filter-clear  { background: var(--surface2); color: var(--muted);
+                     border: 1px solid var(--border); }
+.btn-filter-clear:hover { color: var(--text); border-color: var(--border2); }
+.filter-count { font-size: .75rem; color: var(--muted); white-space: nowrap; }
 </style>
 </head>
 <body>
@@ -204,11 +232,29 @@ tbody tr.row-viol:hover td { background: rgba(246,96,96,.08); }
     {% endif %}
   </div>
 
+  <!-- Filter bar -->
+  {% if readings %}
+  <div class="filter-bar">
+    <label>🔍 Período</label>
+    <div class="filter-sep">
+      <label for="filterFrom">De</label>
+      <input type="date" id="filterFrom" onkeydown="if(event.key==='Enter')applyFilter()">
+      <label for="filterTo">Até</label>
+      <input type="date" id="filterTo"   onkeydown="if(event.key==='Enter')applyFilter()">
+    </div>
+    <div class="filter-actions">
+      <button class="btn-filter btn-filter-apply" onclick="applyFilter()">Filtrar</button>
+      <button class="btn-filter btn-filter-clear"  onclick="clearFilter()">Limpar</button>
+      <span class="filter-count" id="filterCount">{{ readings | length }} registros</span>
+    </div>
+  </div>
+  {% endif %}
+
   <!-- Table -->
   <div class="table-card">
     <div class="table-card-header">
       <h2>Registros</h2>
-      <span class="count">{{ readings | length }} leituras · ordem cronológica</span>
+      <span class="count" id="tableCount">{{ readings | length }} leituras · ordem cronológica</span>
     </div>
 
     {% if readings %}
@@ -228,7 +274,7 @@ tbody tr.row-viol:hover td { background: rgba(246,96,96,.08); }
         <tbody>
           {% for r in readings %}
           {% set ok = r.temperature >= r.min_temp and r.temperature <= r.max_temp %}
-          <tr class="{{ '' if ok else 'row-viol' }}">
+          <tr class="{{ '' if ok else 'row-viol' }}" data-ts="{{ r.timestamp }}">
             <td class="idx">{{ loop.index }}</td>
             <td class="mono">{{ r.timestamp }}</td>
             <td class="{{ 'temp-ok' if ok else 'temp-viol' }}">{{ '%.2f' % r.temperature }}°C</td>
@@ -260,5 +306,35 @@ tbody tr.row-viol:hover td { background: rgba(246,96,96,.08); }
   </div>
 
 </div>
+
+<script>
+const TOTAL_ROWS = {{ readings | length }};
+
+function applyFilter() {
+  const from = document.getElementById('filterFrom').value;  // "YYYY-MM-DD" ou ""
+  const to   = document.getElementById('filterTo').value;
+
+  let visible = 0;
+  document.querySelectorAll('tbody tr[data-ts]').forEach(row => {
+    // data-ts é "YYYY-MM-DD HH:MM:SS" — os primeiros 10 chars bastam para comparar datas
+    const rowDate = row.dataset.ts.slice(0, 10);
+    const show = (!from || rowDate >= from) && (!to || rowDate <= to);
+    row.style.display = show ? '' : 'none';
+    if (show) visible++;
+  });
+
+  const suffix = (from || to) ? ` · filtrado` : '';
+  document.getElementById('filterCount').textContent = `${visible} de ${TOTAL_ROWS} registros`;
+  document.getElementById('tableCount').textContent  = `${visible} leituras${suffix}`;
+}
+
+function clearFilter() {
+  document.getElementById('filterFrom').value = '';
+  document.getElementById('filterTo').value   = '';
+  document.querySelectorAll('tbody tr[data-ts]').forEach(r => r.style.display = '');
+  document.getElementById('filterCount').textContent = `${TOTAL_ROWS} registros`;
+  document.getElementById('tableCount').textContent  = `${TOTAL_ROWS} leituras · ordem cronológica`;
+}
+</script>
 </body>
 </html>

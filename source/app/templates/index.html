@@ -247,11 +247,11 @@ body {
 .panel-header h3 { font-size: .82rem; font-weight: 600; color: var(--text); }
 .panel-header .panel-sub { font-size: .7rem; color: var(--muted); }
 .panel-body { padding: 16px; }
-.panel-body-map { height: 340px; }
+.panel-body-map { height: 400px; }
 
 #map { height: 100%; border-radius: 0; }
 
-.chart-wrap { position: relative; height: 280px; }
+.chart-wrap { position: relative; height: 380px; }
 
 /* ── Empty state ─────────────────────────────────────────── */
 .empty-state {
@@ -503,16 +503,8 @@ tr:hover td { background: var(--surface2); }
     <!-- ── Dashboard Section ──────────────────────────────── -->
     <div id="sectionDashboard">
 
-      <!-- 1. Device Status -->
-      <div>
-        <div class="section-title">Status dos Dispositivos</div>
-        <div class="device-grid" id="deviceGrid">
-          <div class="empty-state"><div class="empty-icon">📡</div>Carregando...</div>
-        </div>
-      </div>
-
-      <!-- 2. Trip Selector -->
-      <div style="margin-top:20px">
+      <!-- 1. Trip Selector -->
+      <div style="margin-top:4px">
         <div class="section-title">Lote</div>
         <div class="trip-row">
           <div class="trip-select-wrap">
@@ -582,11 +574,11 @@ tr:hover td { background: var(--surface2); }
               <table id="tripsTable">
                 <thead>
                   <tr>
-                    <th>ID</th><th>Produto</th><th>Origem → Destino</th><th>Status</th><th></th>
+                    <th>ID</th><th>Produto</th><th>Origem → Destino</th><th>Dispositivo</th><th>Status</th><th></th>
                   </tr>
                 </thead>
                 <tbody id="tripsBody">
-                  <tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">Carregando...</td></tr>
+                  <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">Carregando...</td></tr>
                 </tbody>
               </table>
             </div>
@@ -772,7 +764,7 @@ tr:hover td { background: var(--surface2); }
     </div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal('modalRegister')">Cancelar</button>
-      <button class="btn btn-primary" onclick="confirmRegister()">Registrar</button>
+      <button class="btn btn-primary" id="btnConfirmRegister" onclick="confirmRegister()">Confirmar</button>
     </div>
   </div>
 </div>
@@ -1201,10 +1193,12 @@ function refreshAdminPending() {
       <div class="pending-item">
         <div>
           <div class="pi-name">${d.serial_number}</div>
-          <div class="pi-id">Visto: ${d.last_seen || '—'}</div>
+          ${d.name ? `<div class="pi-id" style="color:var(--warn)">↩ Re-registro: ${d.name}</div>` : ''}
+          <div class="pi-id">Visto: ${d.last_seen || '—'} &nbsp;·&nbsp; <span class="conn-dot ${d.connectivity === 'online' ? 'on' : 'off'}" style="display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:2px"></span>${d.connectivity}</div>
         </div>
-        <button class="btn btn-primary btn-sm" onclick="openRegisterModal(${d.device_id}, '${d.serial_number}')">
-          Registrar
+        <button class="btn btn-primary btn-sm"
+          onclick="openRegisterModal(${d.device_id}, '${d.serial_number}', '${d.name || ''}')">
+          ${d.name ? 'Configurar' : 'Registrar'}
         </button>
       </div>`).join('');
   }).catch(() => {});
@@ -1215,15 +1209,33 @@ function refreshAdminTrips() {
     const body = document.getElementById('tripsBody');
     if (!body) return;
     if (!data.length) {
-      body.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">Nenhuma viagem</td></tr>';
+      body.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">Nenhuma viagem</td></tr>';
       return;
     }
     body.innerHTML = data.map(t => {
       const active = !t.end_time;
+
+      // Célula do dispositivo vinculado
+      let deviceCell;
+      if (t.device_id && (t.device_name || t.device_serial)) {
+        // Viagem ativa com dispositivo: mostra nome + botão desatrelar
+        const detachBtn = `<button class="btn btn-ghost btn-sm" style="margin-top:4px;color:var(--warn);border-color:rgba(240,165,0,.3)"
+             onclick="detachDevice(${t.device_id}, '${t.device_name || t.device_serial}')">
+             ✕ Desatrelar
+           </button>`;
+        deviceCell = `<div style="font-size:.78rem;font-weight:500">${t.device_name}</div>
+                      <div style="font-size:.68rem;color:var(--muted);font-family:monospace">${t.device_serial}</div>
+                      ${detachBtn}`;
+      } else {
+        // Sem dispositivo vinculado
+        deviceCell = `<span style="color:var(--muted2);font-size:.75rem">Sem dispositivo</span>`;
+      }
+
       return `<tr>
         <td>#${t.trip_id}</td>
         <td>${t.vaccine_name}<br><small style="color:var(--muted)">${t.batch_code}</small></td>
         <td>${t.origin} → ${t.destination}</td>
+        <td>${deviceCell}</td>
         <td><span class="tag ${active ? 'tag-ok' : ''}">${active ? 'Ativa' : 'Encerrada'}</span></td>
         <td>${active ? `<button class="btn btn-danger btn-sm" onclick="closeTrip(${t.trip_id})">Encerrar</button>` : '—'}</td>
       </tr>`;
@@ -1231,18 +1243,49 @@ function refreshAdminTrips() {
   }).catch(() => {});
 }
 
-function openRegisterModal(deviceId, serial) {
+function detachDevice(deviceId, deviceName) {
+  if (!confirm(`Desatrelar "${deviceName}" da viagem atual?\n\nO dispositivo voltará para Dispositivos Pendentes e poderá ser vinculado a outra viagem.`)) return;
+  fetch(`/api/admin/devices/${deviceId}/detach`, { method: 'POST' })
+    .then(r => r.json())
+    .then(d => {
+      alert(d.message || d.error);
+      refreshAdminTrips();
+      refreshAdminPending();
+    })
+    .catch(() => alert('Erro ao desatrelar dispositivo.'));
+}
+
+function openRegisterModal(deviceId, serial, existingName) {
   pendingDeviceSerial = deviceId;
   document.getElementById('modalDeviceId').textContent = serial;
-  document.getElementById('regName').value = '';
-  // Populate trip select
+  document.getElementById('regName').value = existingName || '';
+
+  // Título dinâmico: Configurar (re-registro) ou Registrar (novo)
+  const modalTitle = document.querySelector('#modalRegister h3');
+  if (modalTitle) modalTitle.textContent = existingName ? 'Configurar Dispositivo' : 'Registrar Dispositivo';
+
+  // Mostra aviso de re-registro se o dispositivo já tinha um nome
+  let hint = document.getElementById('regNameHint');
+  if (!hint) {
+    hint = document.createElement('div');
+    hint.id = 'regNameHint';
+    hint.style.cssText = 'font-size:.72rem;color:var(--warn);margin-top:-8px;margin-bottom:10px';
+    document.getElementById('regName').after(hint);
+  }
+  hint.textContent = existingName
+    ? `↩ Re-registro — nome anterior: "${existingName}"`
+    : '';
+
+  // Popula o select com viagens ativas
   fetch('/api/admin/trips').then(r => r.json()).then(trips => {
-    document.getElementById('regTrip').innerHTML =
-      trips.filter(t => !t.end_time).map(t =>
-        `<option value="${t.trip_id}">#${t.trip_id} — ${t.vaccine_name} (${t.origin} → ${t.destination})</option>`
-      ).join('');
+    const active = trips.filter(t => !t.end_time);
+    document.getElementById('regTrip').innerHTML = active.length
+      ? active.map(t =>
+          `<option value="${t.trip_id}">#${t.trip_id} — ${t.vaccine_name} (${t.origin} → ${t.destination})</option>`
+        ).join('')
+      : '<option value="">Nenhuma viagem ativa</option>';
     document.getElementById('modalRegister').classList.add('open');
-  });
+  }).catch(() => alert('Erro ao carregar viagens. Verifique a conexão.'));
 }
 
 function confirmRegister() {

@@ -50,7 +50,7 @@ def admin_pending_devices():
     conn = db()
     cur  = conn.cursor(dictionary=True)
     cur.execute(f"""
-        SELECT d.device_id, d.serial_number, d.last_seen,
+        SELECT d.device_id, d.serial_number, d.name, d.last_seen,
                CASE
                  WHEN d.last_seen >= NOW() - INTERVAL 60 SECOND THEN 'online'
                  WHEN d.last_seen >= NOW() - INTERVAL 5 MINUTE  THEN 'recent'
@@ -150,6 +150,53 @@ def admin_deactivate_device(device_id):
     return jsonify({"message": "Dispositivo desativado"}), 200
 
 
+@admin_bp.route("/api/admin/devices/<int:device_id>/detach", methods=["POST"])
+@login_required
+@require_permission("deactivate_device")
+def admin_detach_device(device_id):
+    """Desatrela um ESP32 de sua viagem (ativa ou encerrada) e o retorna ao estado 'pending'.
+
+    O dispositivo mantém nome e empresa, mas volta a aparecer em Dispositivos
+    Pendentes para que o admin possa vinculá-lo a uma nova viagem.
+    A viagem continua existindo — apenas fica sem dispositivo atribuído.
+    """
+    conn = db()
+    cur  = conn.cursor(dictionary=True)
+
+    cur.execute("SELECT * FROM devices WHERE device_id = %s", (device_id,))
+    device = cur.fetchone()
+    if not device:
+        cur.close(); conn.close()
+        return jsonify({"error": "Dispositivo não encontrado"}), 404
+
+    # Remove o device de qualquer viagem vinculada (ativa ou encerrada)
+    cur.execute(
+        "UPDATE trips SET device_id = NULL WHERE device_id = %s",
+        (device_id,)
+    )
+    trip_unlinked = cur.rowcount
+
+    # Retorna ao estado pendente independente do status atual;
+    # status='active' garante que o ESP32 continue enviando heartbeats enquanto aguarda
+    cur.execute(
+        "UPDATE devices SET registration_status = 'pending', status = 'active' WHERE device_id = %s",
+        (device_id,)
+    )
+    conn.commit()
+    cur.close(); conn.close()
+
+    audit("device_detached", target_table="devices", target_id=device_id,
+          user_id=current_user.id, ip=request.remote_addr,
+          details={"serial": device["serial_number"],
+                   "name": device.get("name"), "trip_unlinked": bool(trip_unlinked)})
+    logging.info(
+        f"Dispositivo {device['serial_number']} desatrelado por {current_user.name}"
+        f" (viagem desvinculada: {bool(trip_unlinked)})"
+    )
+    return jsonify({"message": f"Dispositivo '{device.get('name') or device['serial_number']}'"
+                               f" retornou para Dispositivos Pendentes."}), 200
+
+
 # ── Viagens ────────────────────────────────────────────────────────────────────
 
 @admin_bp.route("/api/admin/trips", methods=["GET"])
@@ -164,6 +211,7 @@ def admin_trips():
         SELECT t.trip_id, t.start_time, t.end_time, t.origin, t.destination,
                b.batch_code, v.name AS vaccine_name,
                v.min_temp, v.max_temp,
+               d.device_id     AS device_id,
                d.serial_number AS device_serial,
                d.name          AS device_name,
                d.registration_status
