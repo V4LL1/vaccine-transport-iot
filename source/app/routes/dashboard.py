@@ -170,6 +170,68 @@ def readings(trip_id):
     return jsonify(data)
 
 
+@dashboard_bp.route("/api/map/all")
+@login_required
+def map_all():
+    """Retorna pontos GPS amostrados de todos os rastreamentos da empresa,
+    agrupados por trip_id, para exibição combinada no mapa."""
+    scope, params = company_where("v")
+    conn = db()
+    cur  = conn.cursor(dictionary=True)
+    cur.execute(f"""
+        SELECT r.trip_id,
+               r.latitude, r.longitude,
+               r.timestamp, r.temperature,
+               t.origin, t.destination,
+               v.name AS vaccine_name
+        FROM readings r
+        JOIN trips t         ON r.trip_id   = t.trip_id
+        JOIN vaccine_batch b ON r.batch_id  = b.batch_id
+        JOIN vaccines v      ON b.vaccine_id = v.vaccine_id
+        WHERE {scope}
+          AND r.latitude  IS NOT NULL
+          AND r.longitude IS NOT NULL
+          AND (ABS(r.latitude) > 0.001 OR ABS(r.longitude) > 0.001)
+        ORDER BY r.trip_id ASC, r.timestamp ASC
+    """, params)
+    rows = cur.fetchall()
+    cur.close(); conn.close()
+
+    # Agrupa por trip_id e amostra até 40 pontos por rastreamento
+    trips_map = {}
+    for r in rows:
+        tid = r["trip_id"]
+        if tid not in trips_map:
+            trips_map[tid] = {
+                "trip_id":      tid,
+                "origin":       r["origin"],
+                "destination":  r["destination"],
+                "vaccine_name": r["vaccine_name"],
+                "points": []
+            }
+        trips_map[tid]["points"].append([
+            float(r["latitude"]),
+            float(r["longitude"]),
+            float(r["temperature"]),
+        ])
+
+    result = []
+    for trip in trips_map.values():
+        pts = trip["points"]
+        if not pts:
+            continue
+        # Amostra: primeiro + último + até 38 pontos intermediários
+        if len(pts) > 40:
+            step = max(1, len(pts) // 38)
+            sampled = [pts[0]] + pts[1:-1:step] + [pts[-1]]
+        else:
+            sampled = pts
+        trip["points"] = sampled
+        result.append(trip)
+
+    return jsonify(result)
+
+
 @dashboard_bp.route("/api/readings/recent")
 @login_required
 def recent_readings():

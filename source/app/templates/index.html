@@ -248,6 +248,35 @@ body {
 .panel-header .panel-sub { font-size: .7rem; color: var(--muted); }
 .panel-body { padding: 16px; }
 .panel-body-map { height: 400px; }
+.map-footer {
+  padding: 10px 16px;
+  border-top: 1px solid var(--border);
+  display: flex; align-items: center; gap: 12px;
+}
+.map-toggle-label {
+  display: flex; align-items: center; gap: 8px;
+  cursor: pointer; user-select: none;
+  font-size: .78rem; color: var(--muted);
+  transition: color .15s;
+}
+.map-toggle-label:hover { color: var(--text); }
+.map-toggle-label input[type="checkbox"] {
+  appearance: none; -webkit-appearance: none;
+  width: 15px; height: 15px; border-radius: 4px;
+  border: 1.5px solid var(--border2); background: var(--surface2);
+  cursor: pointer; transition: all .15s; flex-shrink: 0;
+  position: relative;
+}
+.map-toggle-label input[type="checkbox"]:checked {
+  background: var(--accent); border-color: var(--accent);
+}
+.map-toggle-label input[type="checkbox"]:checked::after {
+  content: ''; position: absolute;
+  left: 3px; top: 1px; width: 6px; height: 9px;
+  border: 2px solid #0f0f0f; border-top: none; border-left: none;
+  transform: rotate(42deg);
+}
+.map-toggle-hint { font-size: .7rem; color: var(--muted2); }
 
 #map { height: 100%; border-radius: 0; }
 
@@ -539,6 +568,13 @@ tr:hover td { background: var(--surface2); }
           </div>
           <div class="panel-body-map">
             <div id="map"></div>
+          </div>
+          <div class="map-footer">
+            <label class="map-toggle-label">
+              <input type="checkbox" id="allTripsToggle" onchange="toggleAllTripsMap()">
+              <span>Todos os Rastreamentos</span>
+            </label>
+            <span class="map-toggle-hint" id="allTripsHint"></span>
           </div>
         </div>
       </div>
@@ -1181,7 +1217,8 @@ function refreshChartAndMap(tripId) {
       tempChart.update();
     }
 
-    // ── Map ──
+    // ── Map ── (ignorado se "Todos os Rastreamentos" estiver ativo)
+    if (document.getElementById('allTripsToggle')?.checked) return;
     routeLayer.clearLayers();
     markersLayer.clearLayers();
 
@@ -1224,6 +1261,77 @@ function refreshChartAndMap(tripId) {
     }
 
   }).catch(() => {});
+}
+
+// ── Mapa — Todos os Rastreamentos ─────────────────────────────
+const ALL_TRIP_COLORS = [
+  '#3ECF8E','#60a5fa','#f87171','#fbbf24','#a78bfa',
+  '#34d399','#fb923c','#38bdf8','#e879f9','#4ade80',
+  '#f472b6','#22d3ee','#facc15','#c084fc','#86efac',
+];
+
+function toggleAllTripsMap() {
+  const checked = document.getElementById('allTripsToggle').checked;
+  if (checked) {
+    loadAllTripsMap();
+  } else {
+    // Volta ao modo de rastreamento único
+    document.getElementById('allTripsHint').textContent = '';
+    if (currentTripId) {
+      refreshChartAndMap(currentTripId);
+    } else {
+      routeLayer.clearLayers();
+      markersLayer.clearLayers();
+    }
+  }
+}
+
+function loadAllTripsMap() {
+  document.getElementById('allTripsHint').textContent = 'Carregando...';
+  fetch('/api/map/all').then(r => r.json()).then(trips => {
+    routeLayer.clearLayers();
+    markersLayer.clearLayers();
+
+    const allBounds = [];
+    trips.forEach((trip, idx) => {
+      const color = ALL_TRIP_COLORS[idx % ALL_TRIP_COLORS.length];
+      const pts   = trip.points.map(p => [p[0], p[1]]);
+      if (pts.length === 0) return;
+
+      allBounds.push(...pts);
+
+      // Linha da rota
+      if (pts.length > 1) {
+        L.polyline(pts, { color, weight: 2.5, opacity: .75, lineJoin: 'round' })
+          .addTo(routeLayer);
+      }
+
+      // Marcador de início (círculo preenchido)
+      L.circleMarker(pts[0], {
+        radius: 6, fillColor: color, color: '#0f0f0f', weight: 2, fillOpacity: 1
+      }).bindPopup(
+        `<b>${trip.origin}</b><br><small>${trip.vaccine_name}</small><br><i>Rastreamento #${trip.trip_id}</i>`
+      ).addTo(markersLayer);
+
+      // Marcador da última posição (anel)
+      const last = pts[pts.length - 1];
+      L.circleMarker(last, {
+        radius: 6, fillColor: '#f0a500', color: '#0f0f0f', weight: 2, fillOpacity: 1
+      }).bindPopup(
+        `<b>${trip.destination}</b><br><small>${trip.vaccine_name}</small><br><i>Última posição — Rastreamento #${trip.trip_id}</i>`
+      ).addTo(markersLayer);
+    });
+
+    if (allBounds.length > 0) {
+      map.fitBounds(L.latLngBounds(allBounds), { padding: [24, 24] });
+    }
+
+    const hint = `${trips.length} rastreamento${trips.length !== 1 ? 's' : ''} exibido${trips.length !== 1 ? 's' : ''}`;
+    document.getElementById('allTripsHint').textContent = hint;
+    document.getElementById('mapSub').textContent = hint;
+  }).catch(() => {
+    document.getElementById('allTripsHint').textContent = 'Erro ao carregar';
+  });
 }
 
 // ── Admin ─────────────────────────────────────────────────────
