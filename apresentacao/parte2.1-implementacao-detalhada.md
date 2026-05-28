@@ -1,6 +1,6 @@
 # PARTE 2.1 — O QUE FOI IMPLEMENTADO E COMO FUNCIONA
 
-Este documento explica, em linguagem acessível, cada componente do sistema PharmaTransport IoT — o que foi feito, por que foi feito assim, e quais tecnologias foram usadas.
+Este documento explica, em linguagem acessível, cada componente do sistema PharmaTrack IoT — o que foi feito, por que foi feito assim, e quais tecnologias foram usadas.
 
 ---
 

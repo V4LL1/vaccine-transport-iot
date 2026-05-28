@@ -391,7 +391,7 @@ bool publishReading(const char* payload) {
   return false;
 }
 
-
+  
 // -------------------------------------------------------
 void publishHeartbeat() {
   StaticJsonDocument<128> doc;
@@ -487,7 +487,7 @@ void loop() {
       // QoS 0: broker não guarda mensagens. Aguardamos o Flask resubscrever
       // antes de publicar o buffer, senão as mensagens são perdidas.
       for (int i = 0; i < 50; i++) {
-        esp_task_wdt_reset();
+        esp_task_wdt_reset(); 
         mqttClient.loop();
         delay(100);
       }

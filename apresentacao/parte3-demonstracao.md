@@ -10,7 +10,7 @@ Antes de subir para apresentar, verificar:
 - [ ] ESP32 ligado e conectado (LED WiFi estável)
 - [ ] Serial Monitor fechado (libera porta COM)
 - [ ] Browser aberto em `http://127.0.0.1:5000`
-- [ ] Google Authenticator no celular com conta `PharmaTransport IoT`
+- [ ] Google Authenticator no celular com conta `PharmaTrack IoT`
 - [ ] HiveMQ console aberto em outra aba (para o passo 5)
 
 ---
@@ -35,7 +35,7 @@ Antes de subir para apresentar, verificar:
 
 1. Apontar para o badge **MQTT** verde no topo — broker conectado
 2. Mostrar o card do dispositivo com status **Online** e "visto há Xs"
-3. Selecionar o lote ativo no combobox — viagem carrega automaticamente
+3. Selecionar o lote ativo no combobox — rastreamento carrega automaticamente
 4. Mostrar o gráfico de temperatura (linha do tempo com dados reais)
 5. Mostrar o mapa com a rota em verde e posição atual
 
@@ -117,4 +117,4 @@ Antes de subir para apresentar, verificar:
 ## Encerramento
 
 **Fala sugerida**:
-> "O PharmaTransport IoT transforma o transporte farmacêutico de uma atividade baseada em confiança para uma atividade baseada em evidência verificável. Com hardware de aproximadamente R$80 por dispositivo, broker cloud gratuito e software 100% open-source, entrega monitoramento contínuo, rastreabilidade por lote, segurança em múltiplas camadas e conformidade com a Anvisa desde o primeiro dia. O diferencial não está no hardware caro — está na arquitetura."
+> "O PharmaTrack IoT transforma o transporte farmacêutico de uma atividade baseada em confiança para uma atividade baseada em evidência verificável. Com hardware de aproximadamente R$80 por dispositivo, broker cloud gratuito e software 100% open-source, entrega monitoramento contínuo, rastreabilidade por lote, segurança em múltiplas camadas e conformidade com a Anvisa desde o primeiro dia. O diferencial não está no hardware caro — está na arquitetura."

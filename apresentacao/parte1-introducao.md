@@ -18,7 +18,7 @@ Hoje, na maioria das operações logísticas farmacêuticas do Brasil, a respost
 
 ## 1.2 O Que é o Projeto
 
-O **PharmaTransport IoT** é um sistema de monitoramento seguro e rastreável para transporte de produtos farmacêuticos, desenvolvido como Trabalho de Conclusão de Curso de Engenharia da Computação.
+O **PharmaTrack IoT** é um sistema de monitoramento seguro e rastreável para transporte de produtos farmacêuticos, desenvolvido como Trabalho de Conclusão de Curso de Engenharia da Computação.
 
 O sistema é composto por três grandes dimensões que trabalham juntas:
 
@@ -48,7 +48,7 @@ Cada pilar tem uma responsabilidade clara e separada:
 
 ## 1.3 O Que o Sistema Faz — Funcionalidades Principais
 
-Do ponto de vista operacional, o PharmaTransport IoT entrega as seguintes capacidades:
+Do ponto de vista operacional, o PharmaTrack IoT entrega as seguintes capacidades:
 
 ### Monitoramento Contínuo em Tempo Real
 O dispositivo coleta temperatura, umidade e coordenadas GPS a cada **5 segundos** e transmite via MQTT para o servidor. O dashboard exibe essas informações com atualização automática, sem necessidade de recarregar a página.
@@ -96,7 +96,7 @@ A **RDC nº 430/2020 da Anvisa** — Regulamento de Boas Práticas de Distribui�
 - Identificação dos responsáveis por cada etapa
 - Procedimentos documentados de desvio de temperatura
 
-O PharmaTransport IoT implementa todos esses requisitos de forma automatizada, gerando evidências digitais auditáveis.
+O PharmaTrack IoT implementa todos esses requisitos de forma automatizada, gerando evidências digitais auditáveis.
 
 Além da Anvisa, o sistema está alinhado com:
 - **ISO/IEC 27001**: gestão de segurança da informação (autenticação, controle de acesso, audit log)
@@ -119,7 +119,7 @@ Esses dados transformam a operação logística de reativa (descobrir a falha qu
 
 ### A Tríade CIA da Segurança da Informação
 
-Sistemas críticos são avaliados por três propriedades fundamentais: **Confidencialidade**, **Integridade** e **Disponibilidade**. O PharmaTransport IoT trata cada uma delas como requisito não-negociável.
+Sistemas críticos são avaliados por três propriedades fundamentais: **Confidencialidade**, **Integridade** e **Disponibilidade**. O PharmaTrack IoT trata cada uma delas como requisito não-negociável.
 
 #### Confidencialidade
 

@@ -4,11 +4,13 @@
 
 ## 2.1 Visão Geral da Arquitetura
 
-O sistema foi construído em duas milestones principais, com desenvolvimento incremental e testado em cada etapa antes de avançar.
+O sistema foi construído em três milestones principais, com desenvolvimento incremental e testado em cada etapa antes de avançar.
 
 **Milestone 1 (M1)** — Pipeline funcional: ESP32 → MQTT → Flask → MySQL → Dashboard. Sistema operacional sem segurança avançada, foco em validar o fluxo de dados de ponta a ponta.
 
 **Milestone 2 (M2)** — Camada de segurança: TLS 1.2, autenticação MQTT, MFA, RBAC, HMAC, nonce, audit log. Sistema com segurança em produção.
+
+**Milestone 3 (M3)** — Dashboard completo + multi-tenancy: sistema multi-empresa, gestão completa de dispositivos/rastreamentos/usuários, mapa global de todos os rastreamentos, tab de debug, dados ricos de demonstração.
 
 O desenvolvimento seguiu o princípio de **security by design** — cada componente foi projetado com segurança como requisito desde o início, não como adição posterior.
 
@@ -405,7 +407,7 @@ Implementado com a biblioteca **pyotp**, compatível com Google Authenticator, A
 secret = pyotp.random_base32()  # 160 bits de entropia
 uri = pyotp.totp.TOTP(secret).provisioning_uri(
     name=user["email"],
-    issuer_name="PharmaTransport IoT"
+    issuer_name="PharmaTrack IoT"
 )
 # Gera QR code PNG → Base64 → exibe no template
 img = qrcode.make(uri)
@@ -593,6 +595,31 @@ def audit(action, target_table=None, target_id=None, details=None, user_id=None,
 
 ---
 
+## 2.5.6 Multi-tenancy — Isolamento por Empresa
+
+O sistema suporta múltiplas empresas na mesma instalação, com isolamento completo de dados. A tabela `companies` é a raiz da hierarquia: produtos, dispositivos e usuários pertencem a uma empresa.
+
+**Roles e acesso**:
+- `superadmin`: acesso cross-company (vê dados de todas as empresas)
+- `admin`: acesso completo à própria empresa (CRUD de devices, trips, users, products)
+- `operator`: acesso somente-leitura à própria empresa
+
+**Implementação no backend** — função `company_where(alias)` em `models.py`:
+
+```python
+def company_where(alias: str) -> tuple[str, list]:
+    if current_user.role == "superadmin":
+        return "1=1", []
+    cid = current_user.company_id
+    return f"{alias}.company_id = %s", [cid]
+```
+
+Todo endpoint de leitura aplica esse filtro — é impossível para um usuário de uma empresa acessar dados de outra, mesmo com acesso direto à API.
+
+**Dados de demonstração**: duas empresas independentes — **PharmaTransport** (vacinas, rotas nacionais/globais) e **BioFrio** (biológicos e insulinas, rotas de centros especializados).
+
+---
+
 ## 2.6 Banco de Dados MySQL 8.0
 
 ### 2.6.1 Modelo Relacional
@@ -682,17 +709,30 @@ Cards com indicador de conectividade calculado em tempo real:
 - ⬜ **Pendente** (auto-descoberto, não registrado)
 
 #### Gráfico de Temperatura (Chart.js)
-Linha do tempo completa da viagem selecionada. Otimização de performance: `pointRadius = 0` para viagens com mais de 100 leituras (evita renderizar centenas de círculos individuais).
+Linha do tempo completa do rastreamento selecionado. Linhas tracejadas nos limites de temperatura do produto. Pontos de violação destacados em vermelho. Otimização: `pointRadius = 0` para rastreamentos com mais de 80 leituras.
+
+**Nota técnica importante**: o MySQL retorna colunas DECIMAL como strings em JSON. É necessário `Number(r.temperature)` antes de qualquer operação aritmética — `.toFixed()` em string causa `TypeError` silencioso.
 
 #### Mapa GPS (Leaflet.js)
 - Rota completa como polyline (linha contínua)
-- Marcador de início (🟢) e posição atual (🟠)
-- Popup no hover com temperatura e umidade no ponto
-- Tiles: CARTO Dark (mapa escuro, compatível com o tema do dashboard)
+- Marcador de início (verde) e posição atual (laranja)
+- Popup no hover com temperatura e timestamp
+- Tiles: CARTO Dark (mapa escuro, compatível com o tema)
 - Auto-fit: `map.fitBounds(bounds)` centraliza na rota
 
+#### Mapa Global — Todos os Rastreamentos
+Checkbox "Todos os Rastreamentos" que carrega `/api/map/all` e exibe simultaneamente todos os rastreamentos da empresa no mapa, cada um com uma cor distinta de uma paleta de 15 cores. Permite visualização panorâmica de toda a rede logística.
+
 #### Seletor de Lote
-O usuário seleciona o lote transportado; o sistema exibe automaticamente a viagem associada e carrega os dados. Isso inverte a UX de "selecionar viagem" para "selecionar o produto que você quer rastrear" — mais natural para o operador.
+O usuário seleciona o lote transportado; o sistema exibe automaticamente o rastreamento associado e carrega os dados. UX orientada ao produto, não à viagem.
+
+#### Painel de Alertas (Toasts)
+Polling a cada ~10s para `/api/alerts/poll`. Exibe toasts para:
+- Violações de temperatura (todos os usuários, scoped por empresa)
+- Ataques HMAC detectados (somente admin/superadmin)
+
+#### Tab Debug (somente admin)
+Permite publicar manualmente payloads MQTT simulando um dispositivo ESP32 — útil para testar o pipeline sem hardware físico. Campos: device_id, temperatura, umidade, latitude, longitude.
 
 #### Auto-refresh
 ```javascript
@@ -700,10 +740,10 @@ setInterval(() => {
     refreshStatus();
     refreshDevices();
     if (currentTripId) refreshChartAndMap(currentTripId);
-    if (isAdmin) refreshAdminPending();
+    pollAlerts();
 }, 10000);
 ```
-Sem recarregar a página. Sem WebSocket. A cada 10 segundos, requisições fetch independentes atualizam cada seção.
+Sem recarregar a página. A cada 10 segundos, requisições fetch independentes atualizam cada seção.
 
 ---
 
@@ -811,7 +851,7 @@ Versões fixadas para garantir reprodutibilidade — `pip install -r requirement
 
 ### RDC nº 430/2020 — Anvisa
 
-A Resolução da Diretoria Colegiada nº 430/2020 estabelece as Boas Práticas de Distribuição, Armazenagem e Transporte de Medicamentos. O PharmaTransport IoT implementa seus requisitos principais:
+A Resolução da Diretoria Colegiada nº 430/2020 estabelece as Boas Práticas de Distribuição, Armazenagem e Transporte de Medicamentos. O PharmaTrack IoT implementa seus requisitos principais:
 
 | Requisito RDC 430 | Implementação |
 |---|---|
