@@ -291,9 +291,10 @@ body {
 .empty-icon { font-size: 2rem; opacity: .4; }
 
 /* ── Table ───────────────────────────────────────────────── */
-.table-wrap { overflow-x: auto; }
+.table-wrap { overflow-x: auto; overflow-y: auto; max-height: 260px; }
 table { width: 100%; border-collapse: collapse; font-size: .8rem; }
 th {
+  position: sticky; top: 0; z-index: 1; background: var(--surface2);
   font-size: .65rem; font-weight: 600; color: var(--muted);
   text-transform: uppercase; letter-spacing: .06em;
   padding: 8px 12px; text-align: left;
@@ -441,7 +442,7 @@ tr:hover td { background: var(--surface2); }
 .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
 
 /* ── Pending list ────────────────────────────────────────── */
-.pending-list { display: flex; flex-direction: column; gap: 8px; }
+.pending-list { display: flex; flex-direction: column; gap: 8px; max-height: 260px; overflow-y: auto; }
 .pending-item {
   display: flex; align-items: center; gap: 10px;
   padding: 10px 12px; border-radius: 8px;
