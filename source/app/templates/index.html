@@ -955,9 +955,11 @@ tr:hover td { background: var(--surface2); }
 <!-- ══ SCRIPT ════════════════════════════════════════════════ -->
 <script>
 // ── State ────────────────────────────────────────────────────
-let map, routeLayer, markersLayer;
+let map, routeLayer, markersLayer, hoverLayer;
+let hoverMarker = null;
 let tempChart;
 let currentTripId = null;
+let currentReadings = [];
 let pendingDeviceSerial = null;
 let activeTripId = {{ active_trip_id or 'null' }};
 
@@ -996,6 +998,7 @@ function initMap() {
   }).addTo(map);
   routeLayer   = L.layerGroup().addTo(map);
   markersLayer = L.layerGroup().addTo(map);
+  hoverLayer   = L.layerGroup().addTo(map);
 }
 
 // ── MQTT Status ───────────────────────────────────────────────
@@ -1098,10 +1101,13 @@ function clearViz() {
   if (tempChart) { tempChart.data.labels = []; tempChart.data.datasets.forEach(ds => ds.data = []); tempChart.update(); }
   if (routeLayer) routeLayer.clearLayers();
   if (markersLayer) markersLayer.clearLayers();
+  if (hoverLayer) { hoverLayer.clearLayers(); hoverMarker = null; }
+  currentReadings = [];
 }
 
 function refreshChartAndMap(tripId) {
   fetch(`/api/readings/${tripId}`).then(r => r.json()).then(data => {
+    currentReadings = data;
     const sub = `${data.length} registros`;
     document.getElementById('chartSub').textContent = sub;
     document.getElementById('mapSub').textContent = sub;
@@ -1167,6 +1173,27 @@ function refreshChartAndMap(tripId) {
           responsive: true, maintainAspectRatio: false,
           animation: { duration: 300 },
           interaction: { mode: 'index', intersect: false },
+          onHover: (_, activeEls) => {
+            if (!activeEls.length || document.getElementById('allTripsToggle')?.checked) {
+              if (hoverMarker) { hoverLayer.clearLayers(); hoverMarker = null; }
+              return;
+            }
+            const r = currentReadings[activeEls[0].index];
+            if (!r?.latitude || !r?.longitude ||
+                (Math.abs(r.latitude) < 0.001 && Math.abs(r.longitude) < 0.001)) {
+              if (hoverMarker) { hoverLayer.clearLayers(); hoverMarker = null; }
+              return;
+            }
+            const ll = [r.latitude, r.longitude];
+            if (!hoverMarker) {
+              hoverMarker = L.circleMarker(ll, {
+                radius: 10, fillColor: '#ffffff', color: '#3ECF8E',
+                weight: 2.5, fillOpacity: 0.9
+              }).addTo(hoverLayer);
+            } else {
+              hoverMarker.setLatLng(ll);
+            }
+          },
           plugins: {
             legend: {
               display: true,
@@ -1188,6 +1215,13 @@ function refreshChartAndMap(tripId) {
                   const t = item.parsed.y;
                   const ok = (minT === null || t >= minT) && (maxT === null || t <= maxT);
                   return `  ${t.toFixed(1)}°C — ${ok ? '✓ OK' : '✗ Violação'}`;
+                },
+                afterBody: items => {
+                  const r = currentReadings[items[0]?.dataIndex];
+                  if (!r?.latitude || !r?.longitude ||
+                      (Math.abs(r.latitude) < 0.001 && Math.abs(r.longitude) < 0.001))
+                    return ['  📍 GPS: sem sinal'];
+                  return [`  📍 ${r.latitude.toFixed(5)}, ${r.longitude.toFixed(5)}`];
                 }
               }
             }
