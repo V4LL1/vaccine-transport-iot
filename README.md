@@ -1,9 +1,1 @@
-# Secure IoT System for Monitoring, Control, and Tracking of Vaccine Transport
-
-This project presents a secure IoT system designed for monitoring, controlling, and tracking vaccine transport. 
-
-The project integrates advanced security measures, such as TLS mutual authentication, X.509 certificates, HMAC signatures, replay attack protection, and role-based access control (RBAC) with multi-factor authentication (MFA). Continuity and resilience mechanisms, including broker failover, encrypted backups, and power redundancy, are also implemented.
-
----
-
-
+IoT-based pharmaceutical cold chain monitoring system built with ESP32, Python (Flask), MySQL, and MQTT over TLS. Features real-time temperature, humidity, and GPS tracking, RBAC, MFA, HMAC message signing, audit logging, and a live dashboard for secure, low-cost pharmaceutical transport monitoring.
